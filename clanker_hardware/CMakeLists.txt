@@ -12,7 +12,9 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 
 file(GLOB PYTHON_EXEC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.py)
-message(${PYTHON_EXEC})
+
+install(PROGRAMS ${PYTHON_EXEC}
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
