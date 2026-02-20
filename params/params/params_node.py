@@ -12,6 +12,7 @@ class ParamsNode(Node):
                     ("track_width", Parameter.Type.DOUBLE),
                     ("wheelbase", Parameter.Type.DOUBLE),
                     ("front_area", Parameter.Type.DOUBLE),
+		    ("mass", Paramter.Type.DOUBLE),
                 ])
 
 def main(args=None):

@@ -1,7 +1,8 @@
 params:
   ros__parameters:
-    max_steer: 25.0 # degrees
+    max_steer: 20.0 # degrees
     track_width: 15.875 # cm
     wheelbase: 17.145 # cm
     front_area: 283.0 # cm^2
+    mass: 2082 # g
 
