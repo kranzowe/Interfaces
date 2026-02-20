@@ -59,10 +59,10 @@ class WASDNode(Node):
                 elif(key.char == "s"):
                     self.direction = -1
                     self.direction_stale = self.get_ros_time_as_double() + STALE_TIME
-                elif(key.char == "a"):
+                elif(key.char == "d"):
                     self.steer = 1
                     self.steer_stale = self.get_ros_time_as_double() + STALE_TIME
-                elif(key.char == "d"):
+                elif(key.char == "a"):
                     self.steer = -1
                     self.steer_stale = self.get_ros_time_as_double() + STALE_TIME
                 elif(key.char == "i"):
@@ -76,13 +76,13 @@ class WASDNode(Node):
                     if(self.speed < MIN_SPEED):
                         self.speed = MIN_SPEED
                 
-                elif(key.char == "l"):
+                elif(key.char == "j"):
                     self.steer_rate -= INCREMENT_TURN
 
                     if(self.steer_rate < MIN_TURN):
                         self.steer_rate = MIN_TURN
 
-                elif(key.char == "j"):
+                elif(key.char == "l"):
                     self.steer_rate += INCREMENT_TURN
 
                     if(self.steer_rate > MAX_TURN):
