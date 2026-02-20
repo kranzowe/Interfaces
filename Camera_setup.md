@@ -9,7 +9,9 @@ ros2 launch realsense2_camera rs_launch.py \
   enable_gyro:=false \
   enable_accel:=false \
   enable_pointcloud:=false \
-  align_depth.enable:=false
+  color_width:=640 \
+  color_height:=480 \
+  color_fps:=15
 
 See the topic list
 
