@@ -1,17 +1,7 @@
 Setup for the Realsense Camera: Enabling ONLY RGB (saivng computing power)
 
 
-ros2 launch realsense2_camera rs_launch.py \
-  enable_color:=true \
-  enable_depth:=false \
-  enable_infra1:=false \
-  enable_infra2:=false \
-  enable_gyro:=false \
-  enable_accel:=false \
-  enable_pointcloud:=false \
-  color_width:=640 \
-  color_height:=480 \
-  color_fps:=15
+ros2 launch realsense2_camera rs_launch.py enable_color:=true enable_depth:=false enable_infra1:=false enable_infra2:=false enable_gyro:=false enable_accel:=false pointcloud.enable:=false rgb_camera.color_profile:=640x480x15
 
 See the topic list
 
