@@ -15,7 +15,7 @@ class ImageListener(Node):
 
     def listener_cb(self, data):
         self.get_logger().info('Receiving video frame')
-        frame = self.br.imgmsg_to_cv2(data)
+        frame = self.br.imgmsg_to_cv2(data, 'bgr8')  #channels are flipped, need bgr8 to get channels correct
         cv2.imshow("Intel RealSense Camera", frame) 
 
         cv2.waitKey(1)
