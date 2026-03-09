@@ -93,12 +93,12 @@ class ImageListener(Node):
             '''
             what a node that is subscribed to this node will see
             geometery_msgs/Pose2D center
-                -float64 x
-                -float64 y
-                -float64 theta (rotation)
-            
-            float64 size_x
-            float64 size_y
+            center:
+            x: float64 
+            y: float64 
+            theta: float64  (rotation)
+            size_x: float64 (width)
+            size_y: float64 (height)
 
             '''
             
@@ -114,3 +114,5 @@ def main(args = None):
     rclpy.spin(node)            #spin until it is told to stop
     node.destroy_node()
     rclpy.shutdown()
+
+
