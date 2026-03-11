@@ -18,5 +18,9 @@ source ~/ClankerCollective/install/setup.bash
 
 ros2 run camera_test_pkg my_color_sub
 
-
+ENTIRE LAUNCH FILE (for Vinny)
+cd ~/Projects/ClankerCollective
+colcon build
+source install/setup.bash
+ros2 launch camera_test_pkg camera_tracking.launch.py
 
