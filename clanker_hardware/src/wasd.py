@@ -37,7 +37,7 @@ class WASDNode(Node):
         self.init_vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
 
         #declare parameters
-        self.declare_parameter("ol_speed", 1500)
+        self.declare_parameter("ol_speed", 1500.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
         
@@ -102,15 +102,16 @@ class WASDNode(Node):
         except AttributeError:
             pass
 
+        
+
+    def pub_cb(self):
+
         if(self.pwm_mode):
-            self.steer = self.steer * 250 + 1500
-            self.speed = -self.speed * 300 + 1500
+            self.steer = self.steer * 250 + 1500.0
+            self.speed = -self.speed * 300 + 1500.0
 
         if(self.tune_mode):
             self.speed = self.ol_speed
-
-
-    def pub_cb(self):
 
         msg = Twist()
         time = self.get_ros_time_as_double()
