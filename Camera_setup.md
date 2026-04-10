@@ -24,3 +24,6 @@ colcon build
 source install/setup.bash
 ros2 launch camera_test_pkg camera_tracking.launch.py
 
+ros2 launch camera_test_pkg camera_tracking.launch.py
+
+
