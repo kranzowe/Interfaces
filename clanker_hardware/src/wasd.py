@@ -117,7 +117,7 @@ class WASDNode(Node):
                 msg.linear.x = self.direction * self.speed
 
         if(self.pwm_mode):
-            msg.angular.z = self.steer * 250 + 1500.0
+            msg.angular.z = self.steer * 250 * self.steer_rate + 1500.0
             msg.linear.x = -self.speed * 300 + 1500.0
 
         if(self.tune_mode):
