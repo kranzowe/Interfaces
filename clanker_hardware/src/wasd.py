@@ -131,9 +131,9 @@ class WASDNode(Node):
     
     def update_param(self):
 
-        self.ol_speed = self.get_parameter("ol_speed")
-        self.tune_mode = self.get_parameter("tune_mode")
-        self.pwm_mode = self.get_parameter("pwm_mode")
+        self.ol_speed = self.get_parameter("ol_speed").value
+        self.tune_mode = self.get_parameter("tune_mode").value
+        self.pwm_mode = self.get_parameter("pwm_mode").value
 
 
 
