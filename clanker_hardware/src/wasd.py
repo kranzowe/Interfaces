@@ -106,13 +106,6 @@ class WASDNode(Node):
 
     def pub_cb(self):
 
-        if(self.pwm_mode):
-            self.steer = self.steer * 250 + 1500.0
-            self.speed = -self.speed * 300 + 1500.0
-
-        if(self.tune_mode):
-            self.speed = self.ol_speed
-
         msg = Twist()
         time = self.get_ros_time_as_double()
 
@@ -122,6 +115,13 @@ class WASDNode(Node):
 
             if(time < self.direction_stale):
                 msg.linear.x = self.direction * self.speed
+
+        if(self.pwm_mode):
+            msg.angular.z = self.steer * 250 + 1500.0
+            msg.linear.x = -self.speed * 300 + 1500.0
+
+        if(self.tune_mode):
+            msg.linear.x = self.ol_speed
 
         self.init_vel_pub.publish(msg)
 
