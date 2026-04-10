@@ -40,7 +40,9 @@ class WASDNode(Node):
         self.declare_parameter("ol_speed", 1500.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
+        self.declare_parameter("netrual_steer", 1530.0)
         
+        self.neutral_steer = self.get_parameter("netrual_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
         self.tune_mode = self.get_parameter("tune_mode").value
@@ -119,11 +121,11 @@ class WASDNode(Node):
                 msg.linear.x = self.direction * self.speed
 
         if(self.pwm_mode):
-            msg.angular.z = self.steer * 250 * self.steer_rate + 1500.0
+            msg.angular.z = self.steer * -250 * self.steer_rate +  self.neutral_steer
             msg.linear.x = -self.speed * 300 + 1500.0
 
             if(time > self.steer_stale):
-                msg.angular.z = 1500.0
+                msg.angular.z =  self.neutral_steer
 
 
         if(self.tune_mode):
@@ -141,6 +143,8 @@ class WASDNode(Node):
         self.ol_speed = self.get_parameter("ol_speed").value
         self.tune_mode = self.get_parameter("tune_mode").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
+        self.neutral_steer = self.get_parameter("netrual_steer").value
+
 
 
 
