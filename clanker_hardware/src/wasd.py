@@ -40,7 +40,7 @@ class WASDNode(Node):
         self.declare_parameter("ol_speed", 1500.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
-        self.declare_parameter("netrual_steer", 1530.0)
+        self.declare_parameter("netrual_steer", 1470.0)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
