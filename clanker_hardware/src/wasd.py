@@ -36,6 +36,15 @@ class WASDNode(Node):
         #initialize the velocity publisher
         self.init_vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
 
+        #declare parameters
+        self.declare_parameter("ol_speed", 1500)
+        self.declare_parameter("tune_mode", True)
+        self.declare_parameter("pwm_mode", True)
+        
+        self.ol_speed = self.get_parameter("ol_speed")
+        self.pwm_mode = self.get_parameter("pwm_mode")
+        self.tune_mode = self.get_parameter("tune_mode")
+
         #start a timer to handle consistent message pub
         self.create_timer(0.1, self.pub_cb)
 
@@ -46,6 +55,8 @@ class WASDNode(Node):
 
         listener_thread = Thread(target= start_listener)
         listener_thread.start()
+
+        self.create_timer(1, self.update_param)
 
     def on_press(self, key):
 
@@ -88,9 +99,16 @@ class WASDNode(Node):
                     if(self.steer_rate > MAX_TURN):
                         self.steer_rate = MAX_TURN
 
- 
         except AttributeError:
             pass
+
+        if(self.pwm_mode):
+            self.steer = self.steer * 250 + 1500
+            self.speed = -self.speed * 300 + 1500
+
+        if(self.tune_mode):
+            self.speed = self.ol_speed
+
 
     def pub_cb(self):
 
@@ -110,6 +128,13 @@ class WASDNode(Node):
     def get_ros_time_as_double(self):
         #return the ros2 time as float
         return self.get_clock().now().seconds_nanoseconds()[1] * 1e-9 + self.get_clock().now().seconds_nanoseconds()[0]
+    
+    def update_param(self):
+
+        self.ol_speed = self.get_parameter("ol_speed")
+        self.tune_mode = self.get_parameter("tune_mode")
+        self.pwm_mode = self.get_parameter("pwm_mode")
+
 
 
 def main(args=None):
