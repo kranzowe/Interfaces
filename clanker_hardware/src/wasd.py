@@ -112,6 +112,8 @@ class WASDNode(Node):
         with self.listener_lock:
             if(time < self.steer_stale):
                 msg.angular.z = self.steer * self.steer_rate
+            else:
+                msg.angular.z = 0
 
             if(time < self.direction_stale):
                 msg.linear.x = self.direction * self.speed
@@ -119,6 +121,10 @@ class WASDNode(Node):
         if(self.pwm_mode):
             msg.angular.z = self.steer * 250 * self.steer_rate + 1500.0
             msg.linear.x = -self.speed * 300 + 1500.0
+
+            if(time > self.steer_stale):
+                msg.angular.z = 1500
+
 
         if(self.tune_mode):
             msg.linear.x = self.ol_speed
