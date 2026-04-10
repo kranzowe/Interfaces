@@ -41,9 +41,9 @@ class WASDNode(Node):
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
         
-        self.ol_speed = self.get_parameter("ol_speed")
-        self.pwm_mode = self.get_parameter("pwm_mode")
-        self.tune_mode = self.get_parameter("tune_mode")
+        self.ol_speed = self.get_parameter("ol_speed").value
+        self.pwm_mode = self.get_parameter("pwm_mode").value
+        self.tune_mode = self.get_parameter("tune_mode").value
 
         #start a timer to handle consistent message pub
         self.create_timer(0.1, self.pub_cb)
