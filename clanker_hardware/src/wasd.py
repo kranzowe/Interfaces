@@ -122,7 +122,7 @@ class WASDNode(Node):
 
         if(self.pwm_mode):
             msg.angular.z = self.steer * -250 * self.steer_rate +  self.neutral_steer
-            msg.linear.x = -self.speed * 300 + 1500.0
+            msg.linear.x = -self.speed * 300 * self.direction + 1500.0
 
             if(time > self.steer_stale):
                 msg.angular.z =  self.neutral_steer
