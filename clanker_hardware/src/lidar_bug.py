@@ -164,7 +164,7 @@ class WASDNode(Node):
         #slide on that mode
         s = (self.target_angle - self.optimal_angle) * self.steer_lamda + self.instant_angular_rate
         beta_steer = self.steer_p * self.steer_lamda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
-        control_input = self.sign(s) * beta_steer + self.instant_angular_rate
+        control_input = -self.sign(s) * beta_steer - self.instant_angular_rate
 
         msg.linear.x = self.ol_speed 
         msg.angular.z = 1500.0 + control_input
