@@ -84,7 +84,7 @@ class WASDNode(Node):
                 while(not gap_end_found):
                     inner_idx = (counter + idx) % self.lidar_resolution
 
-                    if not (isinf(scan_ranges[(idx + idx2) % self.lidar_resolution])):
+                    if not (isinf(scan_ranges[inner_idx])):
                         gap_end_found = True
                         gap_end_val = scan_ranges[inner_idx]
 
