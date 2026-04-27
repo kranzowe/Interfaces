@@ -90,11 +90,11 @@ class WASDNode(Node):
 
                     counter += 1
 
-            increment = (gap_end_val - scan_ranges[idx - 1]) / coutner
+                increment = (gap_end_val - scan_ranges[idx - 1]) / coutner
 
-            for idx2 in range(0, counter):
-                
-                scan_ranges[idx + idx2] = idx2 * increment + scan_ranges[idx - 1]
+                for idx2 in range(0, counter):
+                    
+                    scan_ranges[idx + idx2] = idx2 * increment + scan_ranges[idx - 1]
 
             else:
                 found_first_valid = True
