@@ -105,7 +105,6 @@ class WASDNode(Node):
 
         self.get_logger().info(f"{msg.ranges}")
 
-
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
