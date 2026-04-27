@@ -60,9 +60,7 @@ class TelemetryNode(Node):
             self.imu_z_buffer.pop(0)
 
     def imu_callback(self, msg):
-        print(len(self.time_buffer))
-        print(msg)
-        time = node.get_clock().now().nanoseconds / 1e9
+        time = self.get_clock().now().nanoseconds / 1e9
         self.time_buffer.append(time)
         self.imu_x_buffer.append(msg.x)
         self.imu_y_buffer.append(msg.y)
