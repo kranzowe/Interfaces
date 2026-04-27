@@ -138,7 +138,7 @@ class WASDNode(Node):
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
-        msg.ranges = list(trim_1_integral / self.integration_ranges)
+        msg.ranges = list(trim_1_integral / self.integration_range)
 
         self.integral_scan_pub.publish(msg)
 
@@ -179,7 +179,7 @@ class WASDNode(Node):
 
     def sign(self, val):
 
-        if(abs(val) < self.steer_phi / self.steer_lamda):
+        if(abs(val) < self.steer_phi * self.steer_lamda):
             return 0 
         
         return val / abs(val) 
