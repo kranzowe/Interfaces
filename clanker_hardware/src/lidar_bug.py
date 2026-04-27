@@ -105,6 +105,8 @@ class WASDNode(Node):
         msg.linear.x = 1500.0
         msg.angular.z = self.optimal_angle * 2 + 1500.0
 
+        self.init_vel_pub(msg)
+
 
 
     def get_ros_time_as_double(self):
