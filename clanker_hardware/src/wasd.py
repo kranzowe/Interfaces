@@ -36,6 +36,17 @@ class WASDNode(Node):
         #initialize the velocity publisher
         self.init_vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
 
+        #declare parameters
+        self.declare_parameter("ol_speed", 1500.0)
+        self.declare_parameter("tune_mode", True)
+        self.declare_parameter("pwm_mode", True)
+        self.declare_parameter("netrual_steer", 1470.0)
+        
+        self.neutral_steer = self.get_parameter("netrual_steer").value
+        self.ol_speed = self.get_parameter("ol_speed").value
+        self.pwm_mode = self.get_parameter("pwm_mode").value
+        self.tune_mode = self.get_parameter("tune_mode").value
+
         #start a timer to handle consistent message pub
         self.create_timer(0.1, self.pub_cb)
 
@@ -46,6 +57,8 @@ class WASDNode(Node):
 
         listener_thread = Thread(target= start_listener)
         listener_thread.start()
+
+        self.create_timer(1, self.update_param)
 
     def on_press(self, key):
 
@@ -88,9 +101,10 @@ class WASDNode(Node):
                     if(self.steer_rate > MAX_TURN):
                         self.steer_rate = MAX_TURN
 
- 
         except AttributeError:
             pass
+
+        
 
     def pub_cb(self):
 
@@ -100,9 +114,25 @@ class WASDNode(Node):
         with self.listener_lock:
             if(time < self.steer_stale):
                 msg.angular.z = self.steer * self.steer_rate
+            else:
+                msg.angular.z = 0.0
 
             if(time < self.direction_stale):
                 msg.linear.x = self.direction * self.speed
+
+        if(self.pwm_mode):
+            msg.angular.z = self.steer * -250 * self.steer_rate +  self.neutral_steer
+            msg.linear.x = -self.speed * 300 * self.direction + 1500.0
+
+            if(time > self.direction_stale):
+                msg.linear.x = 1500.0
+
+            if(time > self.steer_stale):
+                msg.angular.z =  self.neutral_steer
+
+
+        if(self.tune_mode):
+            msg.linear.x = self.ol_speed
 
         self.init_vel_pub.publish(msg)
 
@@ -110,6 +140,15 @@ class WASDNode(Node):
     def get_ros_time_as_double(self):
         #return the ros2 time as float
         return self.get_clock().now().seconds_nanoseconds()[1] * 1e-9 + self.get_clock().now().seconds_nanoseconds()[0]
+    
+    def update_param(self):
+
+        self.ol_speed = self.get_parameter("ol_speed").value
+        self.tune_mode = self.get_parameter("tune_mode").value
+        self.pwm_mode = self.get_parameter("pwm_mode").value
+        self.neutral_steer = self.get_parameter("netrual_steer").value
+
+
 
 
 def main(args=None):
