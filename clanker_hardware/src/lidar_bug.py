@@ -71,8 +71,9 @@ class WASDNode(Node):
     def scan_cb(self, msg):
 
         scan_ranges = np.array(msg.ranges)
+        self.get_logger().info(f"{scan_ranges.shape}")
 
-        width_integral = np.zeros((1,self.lidar_resolution + self.integration_range))
+        width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
             width_integral[i:i+self.lidar_resolution] += scan_ranges
