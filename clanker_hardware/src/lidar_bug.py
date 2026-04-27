@@ -67,6 +67,7 @@ class WASDNode(Node):
         self.declare_parameter("steer_b0", 90.0)
         self.declare_parameter("nuetral_steer", 3)
         self.declare_parameter("range_threshold", 0.6)
+        self.declare_parameter("noise_threshold", 21)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
@@ -80,6 +81,7 @@ class WASDNode(Node):
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.range_threshold = self.get_parameter("range_threshold").value
         self.neutral_steer = self.get_parameter("nuetral_steer").value
+        self.noise_threshold = self.get_parameter("noise_threshold").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
 
@@ -201,16 +203,16 @@ class WASDNode(Node):
         #remove noise
         for idx in range(4, self.lidar_resolution - 5):
 
-            noise_free_points[(idx - 4):(idx +5)] += inverse_points[idx] * np.array([1,1,1,1,1,1,1,1,1])
+            noise_free_points[(idx - floor(self.noise_threshold / 2)):(idx +floor(self.noise_threshold / 2) + 1)] += inverse_points[idx] * np.ones(self.noise_threshold)
 
-        noise_free_points = np.ones(self.lidar_resolution) - noise_free_points 
+        noise_free_points = np.ones(self.lidar_resolution) - np.maximum(noise_free_points, 1.0)
         dilated_points = np.zeros(self.lidar_resolution)
 
         #run a dilation
         for idx in range(6, self.lidar_resolution - 7):
 
-            dilated_points[(idx - 6):(idx +7)] += noise_free_points[idx] * np.array([1,1,1,1,1,1,1,1,1,1,1,1,1])
-
+            dilated_points[(idx - floor((self.noise_threshold + 4) / 2)):(idx +floor((self.noise_threshold + 4)) + 1)] += noise_free_points[idx] * np.ones(self.noise_threshold + 4)
+            
         middle_ind = 0 
         largest_middle_ind = 0
         for idx in range(1, self.lidar_resolution + 1):
@@ -256,6 +258,8 @@ class WASDNode(Node):
         self.steer_b = self.get_parameter("steer_b").value
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.range_threshold = self.get_parameter("range_threshold").value
+        self.noise_threshold = self.get_parameter("noise_threshold").value
+
 
         
 
