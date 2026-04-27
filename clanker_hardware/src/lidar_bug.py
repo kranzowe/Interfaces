@@ -120,10 +120,12 @@ class WASDNode(Node):
 
 
         msg = LaserScan()
-        msg.ranges = trim_1_integral
+        msg.ranges = trim_1_integral.tolist()
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
+
+        self.integral_scan_pub.publish(msg)
 
     def pub_cb(self):
 
