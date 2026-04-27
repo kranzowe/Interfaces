@@ -88,7 +88,14 @@ class WASDNode(Node):
         trim_1_integral = width_integral[:self.lidar_resolution]
         trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
-        self.get_logger().info(f"max range{max(trim_1_integral) / 20} best_angel{np.argmax(trim_1_integral) / 2}")
+        #trim the back out
+        trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
+        trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))] = 0
+
+        #get the optimal angle
+        optimal_angle = (np.argmax(trim_1_integral) + self.integration_range / 2) / 2
+
+        self.get_logger().info(f"max range{max(trim_1_integral) / 20} best_angel{optimal_angle}")
 
 
     def pub_cb(self):
