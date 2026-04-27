@@ -100,8 +100,8 @@ class WASDNode(Node):
 
         msg = Twist()
 
-        msg.linear.x = 1500
-        msg.angular.z = self.optimal_angle * 2 + 1500
+        msg.linear.x = 1500.0
+        msg.angular.z = self.optimal_angle * 2 + 1500.0
 
 
 
