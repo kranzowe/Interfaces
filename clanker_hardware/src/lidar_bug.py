@@ -74,17 +74,37 @@ class WASDNode(Node):
 
     def scan_cb(self, msg):
 
-        self.get_logger().info(f"{msg.intensities}")
 
         scan_ranges = np.array(msg.ranges)
-        self.get_logger().info(f"{scan_ranges.shape}")
 
+        found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
-            if(isinf(meas_range)):
-                scan_ranges[idx] = 12.0
+            if(isinf(meas_range) and found_first_valid):
 
-            if(meas_range > 12):
-                scan_ranges[idx] = 12.0
+                gap_end_found = False
+                coutner = 1
+                gap_end_val = 0
+                while(not gap_end_found):
+                    inner_idx = (coutner + idx) % self.lidar_resolution
+
+                    if not (isinf(scan_ranges[inner_idx])):
+                        gap_end_found = True
+                        gap_end_val = scan_ranges[inner_idx]
+
+                    counter += 1
+
+            increment = (gap_end_val - scan_ranges[idx - 1]) / coutner
+
+            for idx2 in range(0, counter):
+                
+                scan_ranges[idx + idx2] = idx2 * increment + scan_ranges[idx - 1]
+
+            else:
+                found_first_valid = True
+
+
+        self.get_logger().info(f"{msg.ranges}")
+
 
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
