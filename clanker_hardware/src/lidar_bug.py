@@ -7,6 +7,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float32
 
 from threading import Thread, Lock
 
@@ -35,6 +36,11 @@ class WASDNode(Node):
     listener_lock = Lock()
 
     optimal_angle = 0
+    target_angle = 0
+    
+    previous_angle = 0
+    previous_time = 0 
+    current_time = 0
 
     def __init__(self):
         super().__init__("wasd_node")
@@ -46,6 +52,7 @@ class WASDNode(Node):
         #initialize the velocity publisher
         self.init_vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
         self.integral_scan_pub = self.create_publisher(LaserScan, "integral_scan", 10)
+        self.optimal_angle_pub = self.create_publisher(Float32, "optimal_angle", 10)
 
         #declare parameters
         self.declare_parameter("ol_speed", 1500.0)
@@ -55,7 +62,10 @@ class WASDNode(Node):
         self.declare_parameter("lidar_res", 720)
         self.declare_parameter("integration_range", 10) #units are degrees
         self.declare_parameter("exclusion_width", 150)
-        self.declare_parameter("steer_p", 10)
+        self.declare_parameter("steer_p", 30.0)
+        self.declare_parameter("steer_lamda", 0.3)
+        self.declare_parameter("steer_b", 0.0)
+        self.declare_parameter("steer_b0", 60.0)
         self.declare_parameter("nuetral_steer", 3)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
@@ -64,6 +74,9 @@ class WASDNode(Node):
         self.tune_mode = self.get_parameter("tune_mode").value
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.steer_p = self.get_parameter("steer_p").value
+        self.steer_lamda = self.get_parameter("steer_lamda").value
+        self.steer_b = self.get_parameter("steer_b").value
+        self.steer_b0 = self.get_parameter("steer_b0").value
         self.neutral_steer = self.get_parameter("nuetral_steer").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
@@ -122,25 +135,37 @@ class WASDNode(Node):
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
-
-        self.get_logger().info(f"{list(trim_1_integral)}")
-
         msg.ranges = list(trim_1_integral)
-
-
-
 
         self.integral_scan_pub.publish(msg)
 
+        msg = Float32()
+        msg.data = self.optimal_angle
+        self.optimal_angle_pub.publish(msg)
+
+        if(self.previous_time == 0):
+            self.instant_angular_rate = (self.optimal_angle - self.previous_angle) / (self.current_time - self.previous_time)
+
+
+        self.current_time = self.get_ros_time_as_double()
+        self.previous_time = self.current_time
+
+
     def pub_cb(self):
+
+        #make sure the derivate term is saturated
+        if(self.previous_time == 0):
+            return
 
         msg = Twist()
 
         #slide on that mode
-        self.optimal_angle * self.steer_p 
+        s = (self.optimal_angle - self.optimal_angle) * self.steer_lamda + self.instant_angular_rate
+        beta_steer = self.steer_p * self.steer_lamda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
+        control_input = s / abs(s) * beta_steer + self.instant_angular_rate
 
         msg.linear.x = self.ol_speed 
-        msg.angular.z = + 1500.0
+        msg.angular.z = 1500.0 + control_input
 
         if(msg.angular.z > 1990):
             msg.angular.z = 1990.0
