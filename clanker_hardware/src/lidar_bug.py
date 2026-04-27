@@ -100,7 +100,7 @@ class WASDNode(Node):
                 found_first_valid = True
 
 
-        self.get_logger().info(f"{msg.ranges}")
+        self.get_logger().info(f"{scan_ranges}")
 
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
