@@ -159,7 +159,7 @@ class TelemetryNode(Node):
             if self.control_angle_arrow is None:
                 self.control_angle_arrow = self.ax_scan.arrow(0, 0, np.sin(-self.control_angle), np.cos(-self.control_angle), color='blue')
             else:
-                self.control_angle_arrow.set_data(dx=np.sin(self.control_angle), dy=np.cos(self.control_angle))
+                self.control_angle_arrow.set_data(dx=np.sin(-self.control_angle), dy=np.cos(-self.control_angle))
             
 
     def update_vis(self):
