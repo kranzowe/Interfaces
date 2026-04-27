@@ -156,10 +156,11 @@ class TelemetryNode(Node):
                 pts = list(zip(self.integral_scan_x, self.integral_scan_y))
                 self.scatter_integral_scan.set_offsets(pts)
         if self.control_angle is not None:
+            arrow_len = 3
             if self.control_angle_arrow is None:
-                self.control_angle_arrow = self.ax_scan.arrow(0, 0, np.sin(-self.control_angle), np.cos(-self.control_angle), color='blue')
+                self.control_angle_arrow = self.ax_scan.arrow(0, 0, arrow_len * np.sin(-self.control_angle), arrow_len * np.cos(-self.control_angle), color='blue')
             else:
-                self.control_angle_arrow.set_data(dx=np.sin(-self.control_angle), dy=np.cos(-self.control_angle))
+                self.control_angle_arrow.set_data(dx=arrow_len * np.sin(-self.control_angle), dy=arrow_len * np.cos(-self.control_angle))
             
 
     def update_vis(self):
