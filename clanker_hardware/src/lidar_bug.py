@@ -74,7 +74,7 @@ class WASDNode(Node):
 
     def scan_cb(self, msg):
 
-        self.get_logger(F"{msg.intensities}")
+        self.get_logger().info(f"{msg.intensities}")
 
         scan_ranges = np.array(msg.ranges)
         self.get_logger().info(f"{scan_ranges.shape}")
