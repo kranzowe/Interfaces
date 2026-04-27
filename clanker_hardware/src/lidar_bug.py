@@ -73,8 +73,8 @@ class WASDNode(Node):
         scan_ranges = np.array(msg.ranges)
         self.get_logger().info(f"{scan_ranges.shape}")
 
-        for idx, range in enumerate(scan_ranges):
-            if(isinf(range)):
+        for idx, meas_range in enumerate(scan_ranges):
+            if(isinf(meas_range)):
                 scan_ranges[idx] = 12.0
 
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
