@@ -74,6 +74,9 @@ class WASDNode(Node):
 
         scan_ranges = np.array(msg.ranges)
 
+        self.get_logger().info(f"{scan_ranges}")
+
+
         found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
             if(isinf(meas_range) and found_first_valid):
