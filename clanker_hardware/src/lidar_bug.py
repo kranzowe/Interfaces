@@ -66,6 +66,7 @@ class WASDNode(Node):
         self.declare_parameter("steer_b", 0.0)
         self.declare_parameter("steer_b0", 90.0)
         self.declare_parameter("nuetral_steer", 3)
+        self.declare_parameter("range_threshold", 0.6)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
@@ -77,6 +78,7 @@ class WASDNode(Node):
         self.steer_phi = self.get_parameter("steer_phi").value
         self.steer_b = self.get_parameter("steer_b").value
         self.steer_b0 = self.get_parameter("steer_b0").value
+        self.range_threshold = self.get_parameter("range_threshold").value
         self.neutral_steer = self.get_parameter("nuetral_steer").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
@@ -188,6 +190,12 @@ class WASDNode(Node):
 
         self.init_vel_pub.publish(msg)
 
+    def determine_optimal_angle(self, threshold_points):
+
+        #run a dilation
+        for idx in range(self.lidar_resolution, self.lidar_resolution *2):
+
+            threshold_points.
 
     def sign(self, val):
 
@@ -215,6 +223,8 @@ class WASDNode(Node):
         self.steer_phi = self.get_parameter("steer_phi").value
         self.steer_b = self.get_parameter("steer_b").value
         self.steer_b0 = self.get_parameter("steer_b0").value
+        self.range_threshold = self.get_parameter("range_threshold").value
+
         
 
 
