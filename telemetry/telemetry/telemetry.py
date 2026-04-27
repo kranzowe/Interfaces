@@ -8,6 +8,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Vector3
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Float32
 import numpy as np
 import os
 import json
@@ -56,23 +57,30 @@ class TelemetryNode(Node):
         self.scan_y = []
         self.integral_scan_x = []
         self.integral_scan_y = []
+        self.control_angle = None
 
         self.lidar_range = 12.0
         self.lidar_scan_sub = self.create_subscription(
             LaserScan, '/scan', self.scan_callback, qos_profile_sensor_data)
         self.integral_scan_sub = self.create_subscription(
             LaserScan, '/integral_scan', self.integral_scan_callback, qos_profile_sensor_data)
+        self.control_angle_sub = self.create_subscription(
+            Float32, '/optimal_angle', self.control_angle_callback, qos_profile_sensor_data)
+
         self.scan_fig = Figure(layout="constrained")
         plt.style.use('dark_background')
         self.ax_scan = self.scan_fig.subplots(1)
         self.ax_scan.set_title("Lidar Integration")
         self.ax_scan.set_xlim([-self.lidar_range-1.0,self.lidar_range+1.0])
         self.ax_scan.set_ylim([-self.lidar_range-1.0,self.lidar_range+1.0])
-        self.ax_scan.scatter([0], [0], c='b')
+        self.ax_scan.scatter([0], [0], c='b') # Origin
+    
         self.scatter_scan = None
         self.scatter_integral_scan = None
+        self.control_angle_arrow = None
 
         if debug:
+            self.control_angle = np.pi/6
             scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
             with open(scan_path, 'r') as f:
                 lidar_scan_load = json.load(f)
@@ -105,14 +113,17 @@ class TelemetryNode(Node):
             self.imu_z_buffer.pop(0)
 
     def scan_callback(self, msg):
-        pts = np.linspace(0, np.pi*2, len(msg.ranges))
+        pts = np.linspace(np.pi*2, 0, len(msg.ranges))
         self.scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
 
     def integral_scan_callback(self, msg):
-        pts = np.linspace(0, np.pi*2, len(msg.ranges))
+        pts = np.linspace(np.pi*2, 0, len(msg.ranges))
         self.integral_scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.integral_scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
+
+    def control_angle_callback(self, msg):
+        self.control_angle = msg.data
 
     def update_imu_plot(self):
         if self.time_buffer:
@@ -144,6 +155,12 @@ class TelemetryNode(Node):
             else:
                 pts = list(zip(self.integral_scan_x, self.integral_scan_y))
                 self.scatter_integral_scan.set_offsets(pts)
+        if self.control_angle is not None:
+            if self.control_angle_arrow is None:
+                self.control_angle_arrow = self.ax_scan.arrow(0, 0, np.sin(-self.control_angle), np.cos(-self.control_angle), color='blue')
+            else:
+                self.control_angle_arrow.set_data(dx=np.sin(self.control_angle), dy=np.cos(self.control_angle))
+            
 
     def update_vis(self):
         self.update_imu_plot()
