@@ -140,7 +140,7 @@ class WASDNode(Node):
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
-        msg.ranges = list(trim_1_integral / self.lidar_resolution)
+        msg.ranges = list(trim_1_integral / self.integration_ranges)
 
         self.integral_scan_pub.publish(msg)
 
