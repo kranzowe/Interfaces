@@ -195,24 +195,31 @@ class WASDNode(Node):
 
     def determine_optimal_angle(self, threshold_points):
 
-        dilated_points = threshold_points.copy()
+        noise_free_points = np.ones(self.lidar_resolution) - threshold_points.copy()
+        inverse_points = np.ones(self.lidar_resolution) - threshold_points.copy()
+
+        #remove noise
+        for idx in range(4, self.lidar_resolution - 5):
+
+            noise_free_points[(idx - 4):(idx +5)] += inverse_points[idx] * np.array([1,1,1,1,1,1,1,1,1])
+
+        noise_free_points = np.ones(self.lidar_resolution) - noise_free_points 
+        dilated_points = np.zeros(self.lidar_resolution)
 
         #run a dilation
-        for idx in range(2, self.lidar_resolution - 3):
+        for idx in range(6, self.lidar_resolution - 7):
 
-            dilated_points[(idx - 2):(idx +3)] += threshold_points[idx] * np.array([1,1,1,1,1])
-
-            
+            dilated_points[(idx - 6):(idx +7)] += noise_free_points[idx] * np.array([1,1,1,1,1,1,1,1,1,1,1,1,1])
 
         middle_ind = 0 
         largest_middle_ind = 0
-        for idx in range(0, self.lidar_resolution):
+        for idx in range(1, self.lidar_resolution + 1):
             
-            if(dilated_points[idx] > 0.0):
+            if(dilated_points[self.lidar_resolution - idx] > 0.0):
                 if(middle_ind == 0):
-                    middle_ind = idx
+                    middle_ind = self.lidar_resolution - idx
                 else:
-                    middle_ind += .5
+                    middle_ind -= .5
 
                 largest_middle_ind = middle_ind
             else:
