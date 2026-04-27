@@ -160,9 +160,9 @@ class WASDNode(Node):
         msg = Twist()
 
         #slide on that mode
-        s = (self.optimal_angle - self.optimal_angle) * self.steer_lamda + self.instant_angular_rate
+        s = (self.target_angle - self.optimal_angle) * self.steer_lamda + self.instant_angular_rate
         beta_steer = self.steer_p * self.steer_lamda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
-        control_input = s / abs(s) * beta_steer + self.instant_angular_rate
+        control_input = self.sign(s) * beta_steer + self.instant_angular_rate
 
         msg.linear.x = self.ol_speed 
         msg.angular.z = 1500.0 + control_input
@@ -175,6 +175,12 @@ class WASDNode(Node):
         self.init_vel_pub.publish(msg)
 
 
+    def sign(self, val):
+
+        if(val == 0):
+            return 0 
+        
+        return val / abs(val) 
 
     def get_ros_time_as_double(self):
         #return the ros2 time as float
