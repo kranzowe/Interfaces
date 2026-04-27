@@ -108,9 +108,9 @@ class WASDNode(Node):
         msg.angular.z = self.optimal_angle * self.steer_p + 1500.0
 
         if(msg.angular.z > 1990):
-            msg.angular.z = 1990
+            msg.angular.z = 1990.0
         elif(msg.angular.z < 1010):
-            msg.angular.z = 1010
+            msg.angular.z = 1010.0
 
         self.init_vel_pub.publish(msg)
 
