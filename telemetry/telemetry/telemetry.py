@@ -57,6 +57,7 @@ class TelemetryNode(Node):
         self.scan_y = []
         self.integral_scan_x = []
         self.integral_scan_y = []
+        self.integral_scan_int = []
         self.control_angle = None
 
         self.lidar_range = 12.0
@@ -121,6 +122,7 @@ class TelemetryNode(Node):
         pts = np.linspace(np.pi, -np.pi, len(msg.ranges))
         self.integral_scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.integral_scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
+        self.integral_scan_int = [msg.intensities[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
 
     def control_angle_callback(self, msg):
         self.control_angle = np.deg2rad(msg.data)
@@ -151,10 +153,11 @@ class TelemetryNode(Node):
                 self.scatter_scan.set_offsets(pts)
         if self.integral_scan_x:
             if self.scatter_integral_scan is None:
-                self.scatter_integral_scan = self.ax_scan.scatter(self.integral_scan_x, self.integral_scan_y, c='g', s=2)
+                self.scatter_integral_scan = self.ax_scan.scatter(self.integral_scan_x, self.integral_scan_y, c=self.integral_scan_int, cmap='viridis', s=2)
             else:
                 pts = list(zip(self.integral_scan_x, self.integral_scan_y))
                 self.scatter_integral_scan.set_offsets(pts)
+                self.scatter_integral_scan.set_array(self.integral_scan_int)
         if self.control_angle is not None:
             arrow_len = 3
             if self.control_angle_arrow is None:
