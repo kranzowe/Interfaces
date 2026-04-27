@@ -64,7 +64,7 @@ class WASDNode(Node):
         self.declare_parameter("exclusion_width", 150)
         self.declare_parameter("steer_p", 50.0)
         self.declare_parameter("steer_lamda", 0.3)
-        self.declare_parameter("steer_pi", 3.0)
+        self.declare_parameter("steer_phi", 3.0)
         self.declare_parameter("steer_b", 0.0)
         self.declare_parameter("steer_b0", 90.0)
         self.declare_parameter("nuetral_steer", 3)
