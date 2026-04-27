@@ -92,17 +92,17 @@ class WASDNode(Node):
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
 
-        self.get_logger().info(f"{trim_1_integral}")
-
         #get the optimal angle
-        optimal_angle = (np.argmax(trim_1_integral) + self.integration_range / 2) / 2
-
-        self.get_logger().info(f"max range{max(trim_1_integral) / 20} best_angel{optimal_angle}")
+        self.optimal_angle = (np.argmax(trim_1_integral) + self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
 
     def pub_cb(self):
 
-        pass
+        msg = Twist()
+
+        msg.linear = 1500
+        msg.angular = self.optimal_angle * 2 + 1500
+
 
 
     def get_ros_time_as_double(self):
