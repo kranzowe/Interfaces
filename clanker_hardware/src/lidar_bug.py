@@ -115,6 +115,8 @@ class WASDNode(Node):
         #get the optimal angle
         self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
+        self.get_logger().info(f"{self.optimal_angle}")
+
 
     def pub_cb(self):
 
