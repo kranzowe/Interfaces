@@ -197,13 +197,13 @@ class WASDNode(Node):
         #run a dilation
         for idx in range(self.lidar_resolution, self.lidar_resolution *2):
 
-            self.get_logger().info(f"{threshold_points[(idx - 2)%self.lidar_resolution:(idx +3)%self.lidar_resolution]}")
+            self.get_logger().info(f"{threshold_points}")
 
             threshold_points[(idx - 2)%self.lidar_resolution:(idx +3)%self.lidar_resolution] = threshold_points[idx%self.lidar_resolution] * np.array([1,1,1,1,1])
 
 
 
-        middle_ind = 0
+        middle_ind = 0 
         largest_middle_ind = 0
         for idx in range(0, self.lidar_resolution):
             
