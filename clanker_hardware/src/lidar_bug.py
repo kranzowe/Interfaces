@@ -147,6 +147,8 @@ class WASDNode(Node):
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
+        self.get_logger().info(f"{threshold_points}")
+
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
@@ -154,7 +156,6 @@ class WASDNode(Node):
         msg.ranges = list(trim_1_integral / self.integration_range)
         msg.intensities = list(threshold_points)
 
-        self.get_logger().info(f"{max_indicies}")
 
         self.integral_scan_pub.publish(msg)
 
