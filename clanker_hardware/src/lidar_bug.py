@@ -133,14 +133,26 @@ class WASDNode(Node):
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
 
-        #get the optimal angle
-        self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        #get the optimal angle - v1
+        #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+
+        #get the optimal angle - v2
+        max_range = np.max(trim_1_integral)
+        threshold_range = max_range * self.range_threshold
+        max_indicies = np.where(trim_1_integral > threshold_range)
+
+        threshold_points = np.zeros((self.lidar_resolution))
+        threshold_points[max_indicies] = 1.0
+
+        #take the average of the threshold points
+        self.optimal_angle = (np.median(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
         msg.ranges = list(trim_1_integral / self.integration_range)
+        msg.intensities = list(threshold_points)
 
         self.integral_scan_pub.publish(msg)
 
