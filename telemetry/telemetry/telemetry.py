@@ -87,7 +87,8 @@ class TelemetryNode(Node):
                 lidar_scan_load = json.load(f)
                 dummy_scan = LaserScan()
                 dummy_scan.ranges = [float(r) if r is not None else float('inf') for r in lidar_scan_load['ranges']]
-            self.scan_callback(dummy_scan)
+                dummy_scan.intensities = [float(r) if r is not None else float('inf') for r in lidar_scan_load['intensities']]
+            self.integral_scan_callback(dummy_scan)
 
     def dummy_imu_callback(self):
         time = self.get_clock().now().nanoseconds / 1e9
@@ -153,7 +154,7 @@ class TelemetryNode(Node):
                 self.scatter_scan.set_offsets(pts)
         if self.integral_scan_x:
             if self.scatter_integral_scan is None:
-                self.scatter_integral_scan = self.ax_scan.scatter(self.integral_scan_x, self.integral_scan_y, c=self.integral_scan_int, cmap='viridis', s=2)
+                self.scatter_integral_scan = self.ax_scan.scatter(self.integral_scan_x, self.integral_scan_y, c=self.integral_scan_int, cmap='summer', s=2)
             else:
                 pts = list(zip(self.integral_scan_x, self.integral_scan_y))
                 self.scatter_integral_scan.set_offsets(pts)
