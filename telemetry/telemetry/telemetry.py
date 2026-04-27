@@ -24,7 +24,7 @@ class TelemetryNode(Node):
         self.flask_thread = threading.Thread(target=self.run_flask)
         self.flask_thread.daemon = True
         self.flask_thread.start()
-        self.refresh_rate = 0.2
+        self.refresh_rate = 0.5
 
         debug = True
         self._init_imu(debug)
