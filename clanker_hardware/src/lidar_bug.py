@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from pynput import keyboard
-
 import rclpy
 from rclpy.node import Node
 
