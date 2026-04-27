@@ -81,6 +81,8 @@ class WASDNode(Node):
         for idx, meas_range in enumerate(scan_ranges):
             if(isinf(meas_range) and found_first_valid):
 
+                self.get_logger().info(f"got inf at {idx}")
+
                 gap_end_found = False
                 counter = 1
                 gap_end_val = 0
