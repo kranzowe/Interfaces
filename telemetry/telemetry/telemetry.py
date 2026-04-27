@@ -7,8 +7,12 @@ import threading
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Vector3
+from sensor_msgs.msg import LaserScan
 import numpy as np
+import os
+import json
 from rclpy.qos import qos_profile_sensor_data
+from ament_index_python import get_package_share_directory
 
 class TelemetryNode(Node):
     def __init__(self):
@@ -21,10 +25,11 @@ class TelemetryNode(Node):
         self.flask_thread.daemon = True
         self.flask_thread.start()
 
-        self._init_imu()
-
+        debug = False
+        self._init_imu(debug)
+        self._init_scan(debug)
     
-    def _init_imu(self):
+    def _init_imu(self, debug):
         self.time_window_s = 10.0 # 5 seconds
         self.time_buffer = []
         self.imu_x_buffer = []
@@ -34,18 +39,44 @@ class TelemetryNode(Node):
             Vector3, '/imu/accel', self.imu_callback, qos_profile_sensor_data)
         
         # self.plot_update_tick = self.create_timer(0.2, self.update_vis)
-        self.fig = Figure(layout="constrained")
+        self.imu_fig = Figure(layout="constrained")
         plt.style.use('dark_background')
-        self.ax_x, self.ax_y, self.ax_z = self.fig.subplots(3,1)
+        self.ax_x, self.ax_y, self.ax_z = self.imu_fig.subplots(3,1)
         self.ax_x.set_title("IMU X Acceleration")
         self.ax_y.set_title("IMU Y Acceleration")
         self.ax_z.set_title("IMU Z Acceleration")
         self.line_x, self.line_y, self.line_z = None, None, None
 
-        debug = False
         if debug:
-            self.debug_data_stream = self.create_timer(0.01, self.dummy_imu_callback)
+            self.debug_imu_stream = self.create_timer(0.01, self.dummy_imu_callback)
 
+    def _init_scan(self, debug):
+        self.scan_x = []
+        self.scan_y = []
+        self.integral_scan_x = []
+        self.integral_scan_y = []
+
+        self.lidar_range = 12.0
+        self.lidar_scan_sub = self.create_subscription(
+            LaserScan, '/scan', self.scan_callback, qos_profile_sensor_data)
+        self.integral_scan_sub = self.create_subscription(
+            LaserScan, '/integral_scan', self.integral_scan_callback, qos_profile_sensor_data)
+        self.scan_fig = Figure(layout="constrained")
+        plt.style.use('dark_background')
+        self.ax_scan = self.scan_fig.subplots(1)
+        self.ax_scan.set_title("Lidar Integration")
+        self.ax_scan.set_xlim([-self.lidar_range-1.0,self.lidar_range+1.0])
+        self.ax_scan.set_ylim([-self.lidar_range-1.0,self.lidar_range+1.0])
+        self.scatter_scan = None
+        self.scatter_integral_scan = None
+
+        if debug:
+            scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
+            with open(scan_path, 'r') as f:
+                lidar_scan_load = json.load(f)
+                dummy_scan = LaserScan()
+                dummy_scan.ranges = [float(r) if r is not None else float('inf') for r in lidar_scan_load['ranges']]
+            self.scan_callback(dummy_scan)
 
     def dummy_imu_callback(self):
         time = self.get_clock().now().nanoseconds / 1e9
@@ -70,8 +101,18 @@ class TelemetryNode(Node):
             self.imu_x_buffer.pop(0)
             self.imu_y_buffer.pop(0)
             self.imu_z_buffer.pop(0)
-    
-    def update_imu_data(self):
+
+    def scan_callback(self, msg):
+        pts = np.linspace(0, np.pi*2, len(msg.ranges))
+        self.scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
+        self.scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
+
+    def integral_scan_callback(self, msg):
+        pts = np.linspace(0, np.pi*2, len(msg.ranges))
+        self.integral_scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
+        self.integral_scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
+
+    def update_imu_plot(self):
         if self.time_buffer:
             if self.line_x is None:
                 self.line_x, = self.ax_x.plot(self.time_buffer, self.imu_x_buffer, c='g')
@@ -88,19 +129,42 @@ class TelemetryNode(Node):
                 self.line_y.set_data(self.time_buffer, self.imu_y_buffer)
                 self.line_z.set_data(self.time_buffer, self.imu_z_buffer)
 
-    def update_vis(self):
-        self.update_imu_data()
+    def update_scan_plot(self):
+        if self.scan_x:
+            if self.scatter_scan is None:
+                self.scatter_scan = self.ax_scan.scatter(self.scan_x, self.scan_y, c='r', s=2)
+            else:
+                pts = list(zip(self.scan_x, self.scan_y))
+                self.scatter_scan.set_offsets(pts)
+        if self.integral_scan_x:
+            if self.scatter_integral_scan is None:
+                self.scatter_integral_scan = self.ax_scan.scatter(self.integral_scan_x, self.integral_scan_y, c='g', s=2)
+            else:
+                pts = list(zip(self.integral_scan_x, self.integral_scan_y))
+                self.scatter_integral_scan.set_offsets(pts)
 
-        buf = BytesIO()
-        self.fig.savefig(buf, format="png")
-        data = base64.b64encode(buf.getbuffer()).decode("ascii")
+    def update_vis(self):
+        self.update_imu_plot()
+        self.update_scan_plot()
+
+        imu_buf = BytesIO()
+        self.imu_fig.savefig(imu_buf, format="png")
+        imu_data = base64.b64encode(imu_buf.getbuffer()).decode("ascii")
+
+        scan_buf = BytesIO()
+        self.scan_fig.savefig(scan_buf, format="png")
+        scan_data = base64.b64encode(scan_buf.getbuffer()).decode("ascii")
 
         return f"""
         <html>
-            <head><meta http-equiv="refresh" content="0.2"></head>
+            <head></head>
             <body style="background-color: black;">
                 <h2 style="color: white; font-family: 'Lucida Console', Courier, monospace;">Clanker Collective Data Stream</h1>
-                <img src='data:image/png;base64,{data}'/>
+                <div style="display: flex; gap: 10px;">
+                    <meta http-equiv="refresh" content="0.5">
+                    <img src='data:image/png;base64,{imu_data}' style="width: 50%;"/>
+                    <img src='data:image/png;base64,{scan_data}' style="width: 50%;"/>
+                </div>
             </body>
         </html>
         """
