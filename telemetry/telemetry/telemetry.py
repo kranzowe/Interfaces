@@ -66,20 +66,21 @@ class TelemetryNode(Node):
             self.imu_z_buffer.pop(0)
     
     def update_vis(self):
-        if self.line_x is None:
-            self.line_x, = self.ax_x.plot(self.time_buffer, self.imu_x_buffer, c='g')
-            self.line_y, = self.ax_y.plot(self.time_buffer, self.imu_y_buffer, c='g')
-            self.line_z, = self.ax_z.plot(self.time_buffer, self.imu_z_buffer, c='g')
-        else:
-            self.ax_x.set_xlim([np.min(self.time_buffer), np.max(self.time_buffer)])
-            self.ax_y.set_xlim([np.min(self.time_buffer), np.max(self.time_buffer)])
-            self.ax_z.set_xlim([np.min(self.time_buffer), np.max(self.time_buffer)])
-            self.ax_x.set_ylim([np.min(self.imu_x_buffer)-1e-3, np.max(self.imu_x_buffer)+1e-3])
-            self.ax_y.set_ylim([np.min(self.imu_y_buffer)-1e-3, np.max(self.imu_y_buffer)+1e-3])
-            self.ax_z.set_ylim([np.min(self.imu_z_buffer)-1e-3, np.max(self.imu_z_buffer)+1e-3])
-            self.line_x.set_data(self.time_buffer, self.imu_x_buffer)
-            self.line_y.set_data(self.time_buffer, self.imu_y_buffer)
-            self.line_z.set_data(self.time_buffer, self.imu_z_buffer)
+        if self.time_buffer:
+            if self.line_x is None:
+                self.line_x, = self.ax_x.plot(self.time_buffer, self.imu_x_buffer, c='g')
+                self.line_y, = self.ax_y.plot(self.time_buffer, self.imu_y_buffer, c='g')
+                self.line_z, = self.ax_z.plot(self.time_buffer, self.imu_z_buffer, c='g')
+            else:
+                self.ax_x.set_xlim([np.min(self.time_buffer), np.max(self.time_buffer)])
+                self.ax_y.set_xlim([np.min(self.time_buffer), np.max(self.time_buffer)])
+                self.ax_z.set_xlim([np.min(self.time_buffer), np.max(self.time_buffer)])
+                self.ax_x.set_ylim([np.min(self.imu_x_buffer)-1e-3, np.max(self.imu_x_buffer)+1e-3])
+                self.ax_y.set_ylim([np.min(self.imu_y_buffer)-1e-3, np.max(self.imu_y_buffer)+1e-3])
+                self.ax_z.set_ylim([np.min(self.imu_z_buffer)-1e-3, np.max(self.imu_z_buffer)+1e-3])
+                self.line_x.set_data(self.time_buffer, self.imu_x_buffer)
+                self.line_y.set_data(self.time_buffer, self.imu_y_buffer)
+                self.line_z.set_data(self.time_buffer, self.imu_z_buffer)
 
         buf = BytesIO()
         self.fig.savefig(buf, format="png")
