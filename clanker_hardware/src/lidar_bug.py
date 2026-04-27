@@ -10,7 +10,7 @@ from sensor_msgs.msg import LaserScan
 
 from threading import Thread, Lock
 
-from math import floor
+from math import floor, isinf
 import numpy as np
 
 MIN_SPEED = .2
@@ -72,6 +72,10 @@ class WASDNode(Node):
 
         scan_ranges = np.array(msg.ranges)
         self.get_logger().info(f"{scan_ranges.shape}")
+
+        for idx, range in enumerate(scan_ranges):
+            if(isinf(range)):
+                scan_ranges[idx] = 12.0
 
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
