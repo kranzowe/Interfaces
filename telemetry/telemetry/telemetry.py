@@ -74,14 +74,14 @@ class TelemetryNode(Node):
         self.ax_scan.set_title("Lidar Integration")
         self.ax_scan.set_xlim([-self.lidar_range-1.0,self.lidar_range+1.0])
         self.ax_scan.set_ylim([-self.lidar_range-1.0,self.lidar_range+1.0])
-        self.ax_scan.scatter([0], [0], c='b') # Origin
+        self.ax_scan.scatter([0], [0], c='c') # Origin
     
         self.scatter_scan = None
         self.scatter_integral_scan = None
         self.control_angle_arrow = None
 
         if debug:
-            self.control_angle = np.pi/6
+            self.control_angle = -np.pi/6
             scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
             with open(scan_path, 'r') as f:
                 lidar_scan_load = json.load(f)
@@ -162,7 +162,7 @@ class TelemetryNode(Node):
         if self.control_angle is not None:
             arrow_len = 3
             if self.control_angle_arrow is None:
-                self.control_angle_arrow = self.ax_scan.arrow(0, 0, arrow_len * np.sin(-self.control_angle), arrow_len * np.cos(-self.control_angle), color='blue')
+                self.control_angle_arrow = self.ax_scan.arrow(0, 0, arrow_len * np.sin(-self.control_angle), arrow_len * np.cos(-self.control_angle), color='c')
             else:
                 self.control_angle_arrow.set_data(dx=arrow_len * np.sin(-self.control_angle), dy=arrow_len * np.cos(-self.control_angle))
             
