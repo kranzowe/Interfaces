@@ -199,7 +199,7 @@ class WASDNode(Node):
         inverse_points = np.ones(self.lidar_resolution) - threshold_points.copy()
 
         #remove noise
-        for idx in range(2, self.lidar_resolution - 3):
+        for idx in range(4, self.lidar_resolution - 5):
 
             noise_free_points[(idx - 4):(idx +5)] += inverse_points[idx] * np.array([1,1,1,1,1,1,1,1,1])
 
@@ -207,7 +207,7 @@ class WASDNode(Node):
         dilated_points = np.zeros(self.lidar_resolution)
 
         #run a dilation
-        for idx in range(2, self.lidar_resolution - 3):
+        for idx in range(6, self.lidar_resolution - 7):
 
             dilated_points[(idx - 6):(idx +7)] += noise_free_points[idx] * np.array([1,1,1,1,1,1,1,1,1,1,1,1,1])
 
