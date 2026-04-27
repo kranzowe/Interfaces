@@ -113,12 +113,12 @@ class TelemetryNode(Node):
             self.imu_z_buffer.pop(0)
 
     def scan_callback(self, msg):
-        pts = np.linspace(np.pi*2, 0, len(msg.ranges))
+        pts = np.linspace(np.pi, -np.pi, len(msg.ranges))
         self.scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
 
     def integral_scan_callback(self, msg):
-        pts = np.linspace(np.pi*2, 0, len(msg.ranges))
+        pts = np.linspace(np.pi, -np.pi, len(msg.ranges))
         self.integral_scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.integral_scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
 
