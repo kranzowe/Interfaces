@@ -90,7 +90,7 @@ class WASDNode(Node):
 
         #trim the back out
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
-        trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))] = 0
+        trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
 
         self.get_logger().info(f"{trim_1_integral}")
 
