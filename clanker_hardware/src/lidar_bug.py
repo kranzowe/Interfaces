@@ -54,12 +54,14 @@ class WASDNode(Node):
         self.declare_parameter("lidar_res", 720)
         self.declare_parameter("integration_range", 10) #units are degrees
         self.declare_parameter("exclusion_width", 90)
+        self.declare_parameter("steer_p", 10)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
         self.tune_mode = self.get_parameter("tune_mode").value
         self.lidar_resolution = self.get_parameter("lidar_res").value
+        self.steer_p = self.get_parameter("steer_p").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
 
@@ -103,7 +105,12 @@ class WASDNode(Node):
         msg = Twist()
 
         msg.linear.x = 1500.0
-        msg.angular.z = self.optimal_angle * 2 + 1500.0
+        msg.angular.z = self.optimal_angle * self.steer_p + 1500.0
+
+        if(msg.angular.z > 1990):
+            msg.angular.z = 1990
+        elif(msg.angular.z < 1010):
+            msg.angular.z = 1010
 
         self.init_vel_pub.publish(msg)
 
@@ -122,6 +129,8 @@ class WASDNode(Node):
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
+        self.steer_p = self.get_parameter("steer_p").value
+
 
 
 
