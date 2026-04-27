@@ -24,8 +24,9 @@ class TelemetryNode(Node):
         self.flask_thread = threading.Thread(target=self.run_flask)
         self.flask_thread.daemon = True
         self.flask_thread.start()
+        self.refresh_rate = 0.2
 
-        debug = False
+        debug = True
         self._init_imu(debug)
         self._init_scan(debug)
     
@@ -67,6 +68,7 @@ class TelemetryNode(Node):
         self.ax_scan.set_title("Lidar Integration")
         self.ax_scan.set_xlim([-self.lidar_range-1.0,self.lidar_range+1.0])
         self.ax_scan.set_ylim([-self.lidar_range-1.0,self.lidar_range+1.0])
+        self.ax_scan.scatter([0], [0], c='b')
         self.scatter_scan = None
         self.scatter_integral_scan = None
 
@@ -161,7 +163,7 @@ class TelemetryNode(Node):
             <body style="background-color: black;">
                 <h2 style="color: white; font-family: 'Lucida Console', Courier, monospace;">Clanker Collective Data Stream</h1>
                 <div style="display: flex; gap: 10px;">
-                    <meta http-equiv="refresh" content="0.5">
+                    <meta http-equiv="refresh" content="{self.refresh_rate}">
                     <img src='data:image/png;base64,{imu_data}' style="width: 50%;"/>
                     <img src='data:image/png;base64,{scan_data}' style="width: 50%;"/>
                 </div>
