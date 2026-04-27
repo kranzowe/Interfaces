@@ -101,7 +101,7 @@ class WASDNode(Node):
                     
                     scan_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + scan_ranges[idx - 1]
 
-            else:
+            elif(not isinf(meas_range)):
                 found_first_valid = True
 
 
