@@ -53,7 +53,7 @@ class WASDNode(Node):
         self.declare_parameter("netrual_steer", 1470.0)
         self.declare_parameter("lidar_res", 720)
         self.declare_parameter("integration_range", 10) #units are degrees
-        self.declare_parameter("exclusion_width", 90)
+        self.declare_parameter("exclusion_width", 150)
         self.declare_parameter("steer_p", 10)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
@@ -104,7 +104,7 @@ class WASDNode(Node):
 
         msg = Twist()
 
-        msg.linear.x = 1500.0
+        msg.linear.x = self.ol_speed 
         msg.angular.z = self.optimal_angle * self.steer_p + 1500.0
 
         if(msg.angular.z > 1990):
