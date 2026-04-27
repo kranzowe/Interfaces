@@ -77,6 +77,9 @@ class WASDNode(Node):
             if(isinf(meas_range)):
                 scan_ranges[idx] = 12.0
 
+            if(meas_range > 12):
+                scan_ranges[idx] = 12.0
+
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
@@ -85,7 +88,7 @@ class WASDNode(Node):
         trim_1_integral = width_integral[:self.lidar_resolution]
         trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
-        self.get_logger().info(f"max angle{max(trim_1_integral) / 2}")
+        self.get_logger().info(f"max range{max(trim_1_integral) / 20} best_angel{np.argmax(trim_1_integral) / 2}")
 
 
     def pub_cb(self):
