@@ -123,7 +123,7 @@ class WASDNode(Node):
 
         self.get_logger().info(f"{list(trim_1_integral)}")
 
-        msg.ranges = list(trim_1_integral)
+        msg.ranges = list(trim_1_integral / self.integration_range)
 
 
 
