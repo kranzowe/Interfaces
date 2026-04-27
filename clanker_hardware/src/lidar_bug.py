@@ -198,7 +198,7 @@ class WASDNode(Node):
         #run a dilation
         for idx in range(2, self.lidar_resolution - 3):
 
-            threshold_points[(idx - 2):(idx +3)] = self.sign(threshold_points[idx]) * np.array([1,1,1,1,1])
+            threshold_points[(idx - 2):(idx +3)] += self.sign(threshold_points[idx]) * np.array([1,1,1,1,1])
 
             
 
