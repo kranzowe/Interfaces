@@ -195,7 +195,7 @@ class WASDNode(Node):
 
     def determine_optimal_angle(self, threshold_points):
 
-        dilated_points = threshold_points
+        dilated_points = threshold_points.copy()
 
         #run a dilation
         for idx in range(2, self.lidar_resolution - 3):
