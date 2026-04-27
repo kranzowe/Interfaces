@@ -55,6 +55,7 @@ class WASDNode(Node):
         self.declare_parameter("integration_range", 10) #units are degrees
         self.declare_parameter("exclusion_width", 150)
         self.declare_parameter("steer_p", 10)
+        self.declare_parameter("nuetral_steer", 3)
         
         self.neutral_steer = self.get_parameter("netrual_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
@@ -62,6 +63,7 @@ class WASDNode(Node):
         self.tune_mode = self.get_parameter("tune_mode").value
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.steer_p = self.get_parameter("steer_p").value
+        self.neutral_steer = self.get_parameter("nuetral_steer").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
 
@@ -115,6 +117,9 @@ class WASDNode(Node):
         #get the optimal angle
         self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
+        #add in the steer neutralizer
+        self.optimal_angle += self.neutral_steer
+
         self.get_logger().info(f"{self.optimal_angle}")
 
 
@@ -148,6 +153,7 @@ class WASDNode(Node):
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.steer_p = self.get_parameter("steer_p").value
+        self.neutral_steer = self.get_parameter("nuetral_steer").value
 
 
 
