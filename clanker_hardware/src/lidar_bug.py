@@ -10,7 +10,7 @@ from sensor_msgs.msg import LaserScan
 
 from threading import Thread, Lock
 
-from math import floor, isinf
+from math import floor, isinf, pi
 import numpy as np
 
 MIN_SPEED = .2
@@ -45,6 +45,7 @@ class WASDNode(Node):
 
         #initialize the velocity publisher
         self.init_vel_pub = self.create_publisher(Twist, "cmd_vel", 10)
+        self.integral_scan_pub = self.create_publisher(LaserScan, "integral_scan", 10)
 
         #declare parameters
         self.declare_parameter("ol_speed", 1500.0)
@@ -117,18 +118,29 @@ class WASDNode(Node):
         #get the optimal angle
         self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
-        #add in the steer neutralizer
-        self.optimal_angle += self.neutral_steer
+        msg = LaserScan()
+        msg.angle_min = -pi + pi / self.lidar_resolution
+        msg.angle_max = pi - pi / self.lidar_resolution
+        msg.angle_increment = 2 * pi / self.lidar_resolution
 
-        self.get_logger().info(f"{self.optimal_angle}")
+        self.get_logger().info(f"{list(trim_1_integral)}")
 
+        msg.ranges = list(trim_1_integral)
+
+
+
+
+        self.integral_scan_pub.publish(msg)
 
     def pub_cb(self):
 
         msg = Twist()
 
+        #slide on that mode
+        self.optimal_angle * self.steer_p 
+
         msg.linear.x = self.ol_speed 
-        msg.angular.z = self.optimal_angle * self.steer_p + 1500.0
+        msg.angular.z = + 1500.0
 
         if(msg.angular.z > 1990):
             msg.angular.z = 1990.0
