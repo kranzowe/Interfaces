@@ -154,6 +154,8 @@ class WASDNode(Node):
         msg.ranges = list(trim_1_integral / self.integration_range)
         msg.intensities = list(threshold_points)
 
+        self.get_logger().info(f"{list(threshold_points)}")
+
         self.integral_scan_pub.publish(msg)
 
         msg = Float32()
