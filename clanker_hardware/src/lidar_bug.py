@@ -70,10 +70,7 @@ class WASDNode(Node):
 
         self.create_timer(1, self.update_param)
 
-      
-
     def scan_cb(self, msg):
-
 
         scan_ranges = np.array(msg.ranges)
 
