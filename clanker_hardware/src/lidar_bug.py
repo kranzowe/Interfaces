@@ -88,6 +88,9 @@ class WASDNode(Node):
 
     def scan_cb(self, msg):
 
+        self.current_time = self.get_ros_time_as_double()
+
+
         scan_ranges = np.array(msg.ranges)
 
         found_first_valid = False
@@ -147,7 +150,6 @@ class WASDNode(Node):
             self.instant_angular_rate = (self.optimal_angle - self.previous_angle) / (self.current_time - self.previous_time)
 
 
-        self.current_time = self.get_ros_time_as_double()
         self.previous_time = self.current_time
 
 
