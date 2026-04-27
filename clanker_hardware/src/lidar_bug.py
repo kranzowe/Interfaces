@@ -62,6 +62,7 @@ class WASDNode(Node):
         self.declare_parameter("exclusion_width", 150)
         self.declare_parameter("steer_p", 50.0)
         self.declare_parameter("steer_lamda", 0.3)
+        self.declare_parameter("steer_pi", 3.0)
         self.declare_parameter("steer_b", 0.0)
         self.declare_parameter("steer_b0", 90.0)
         self.declare_parameter("nuetral_steer", 3)
@@ -73,6 +74,7 @@ class WASDNode(Node):
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.steer_p = self.get_parameter("steer_p").value
         self.steer_lamda = self.get_parameter("steer_lamda").value
+        self.steer_phi = self.get_parameter("steer_phi").value
         self.steer_b = self.get_parameter("steer_b").value
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.neutral_steer = self.get_parameter("nuetral_steer").value
@@ -136,7 +138,7 @@ class WASDNode(Node):
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
-        msg.ranges = list(trim_1_integral)
+        msg.ranges = list(trim_1_integral / self.lidar_resolution)
 
         self.integral_scan_pub.publish(msg)
 
@@ -177,7 +179,7 @@ class WASDNode(Node):
 
     def sign(self, val):
 
-        if(val == 0):
+        if(abs(val) < self.steer_phi / self.steer_lamda):
             return 0 
         
         return val / abs(val) 
@@ -197,6 +199,11 @@ class WASDNode(Node):
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.steer_p = self.get_parameter("steer_p").value
         self.neutral_steer = self.get_parameter("nuetral_steer").value
+        self.steer_lamda = self.get_parameter("steer_lamda").value
+        self.steer_phi = self.get_parameter("steer_phi").value
+        self.steer_b = self.get_parameter("steer_b").value
+        self.steer_b0 = self.get_parameter("steer_b0").value
+        
 
 
 
