@@ -57,8 +57,8 @@ class WASDNode(Node):
         self.ol_speed = self.get_parameter("ol_speed").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
         self.tune_mode = self.get_parameter("tune_mode").value
-        self.lidar_resolution = self.get_parameter("lidar_res", 720)
-        self.integration_range = floor(self.get_parameter("integration_range", 10) / 360 * self.lidar_resolution)
+        self.lidar_resolution = self.get_parameter("lidar_res").value
+        self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width") / 360 * self.lidar_resolution)
 
         #start a timer to handle consistent message pub
