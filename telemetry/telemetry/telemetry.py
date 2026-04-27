@@ -123,7 +123,7 @@ class TelemetryNode(Node):
         self.integral_scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
 
     def control_angle_callback(self, msg):
-        self.control_angle = msg.data
+        self.control_angle = np.deg2rad(msg.data)
 
     def update_imu_plot(self):
         if self.time_buffer:
