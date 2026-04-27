@@ -34,6 +34,8 @@ class WASDNode(Node):
 
     listener_lock = Lock()
 
+    optimal_angle = 0
+
     def __init__(self):
         super().__init__("wasd_node")
 
