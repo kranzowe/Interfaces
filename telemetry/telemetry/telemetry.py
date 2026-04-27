@@ -8,6 +8,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Vector3
 import numpy as np
+from rclpy.qos import qos_profile_sensor_data
 
 class TelemetryNode(Node):
     def __init__(self):
@@ -20,14 +21,17 @@ class TelemetryNode(Node):
         self.flask_thread.daemon = True
         self.flask_thread.start()
 
+        self._init_imu()
 
+    
+    def _init_imu(self):
         self.time_window_s = 10.0 # 5 seconds
         self.time_buffer = []
         self.imu_x_buffer = []
         self.imu_y_buffer = []
         self.imu_z_buffer = []
         self.imu_sub = self.create_subscription(
-            Vector3, '/imu/accel', self.imu_callback, 10)
+            Vector3, '/imu/accel', self.imu_callback, qos_profile_sensor_data)
         
         # self.plot_update_tick = self.create_timer(0.2, self.update_vis)
         self.fig = Figure(layout="constrained")
@@ -41,7 +45,8 @@ class TelemetryNode(Node):
         debug = False
         if debug:
             self.debug_data_stream = self.create_timer(0.01, self.dummy_imu_callback)
-    
+
+
     def dummy_imu_callback(self):
         time = self.get_clock().now().nanoseconds / 1e9
         self.time_buffer.append(time)
@@ -68,7 +73,7 @@ class TelemetryNode(Node):
             self.imu_y_buffer.pop(0)
             self.imu_z_buffer.pop(0)
     
-    def update_vis(self):
+    def update_imu_data(self):
         if self.time_buffer:
             if self.line_x is None:
                 self.line_x, = self.ax_x.plot(self.time_buffer, self.imu_x_buffer, c='g')
@@ -84,6 +89,9 @@ class TelemetryNode(Node):
                 self.line_x.set_data(self.time_buffer, self.imu_x_buffer)
                 self.line_y.set_data(self.time_buffer, self.imu_y_buffer)
                 self.line_z.set_data(self.time_buffer, self.imu_z_buffer)
+
+    def update_vis(self):
+        self.update_imu_data()
 
         buf = BytesIO()
         self.fig.savefig(buf, format="png")
