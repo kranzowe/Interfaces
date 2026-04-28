@@ -108,7 +108,7 @@ class WASDNode(Node):
             scan_ranges[:half_part] = scan_ranges[half_part:]
             scan_ranges[half_part:] = half_scan
 
-        min_dist_idx = np.argmin(msg_ranges)
+        min_dist_idx = np.argmin(scan_ranges)
         min_dist = scan_ranges[min_dist_idx]
 
         found_first_valid = False
