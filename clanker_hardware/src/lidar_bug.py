@@ -108,9 +108,6 @@ class WASDNode(Node):
             scan_ranges[:half_part] = scan_ranges[half_part:]
             scan_ranges[half_part:] = half_scan
 
-        min_dist_idx = np.argmin(scan_ranges)
-        min_dist = scan_ranges[min_dist_idx]
-
         found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
             if(isinf(meas_range) and found_first_valid):
@@ -148,6 +145,9 @@ class WASDNode(Node):
         #trim the back out
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
+
+        min_dist_idx = np.argmin(trim_1_integral)
+        min_dist = trim_1_integral[min_dist_idx]
 
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
