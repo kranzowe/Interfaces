@@ -141,8 +141,7 @@ class WASDNode(Node):
             trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
         else:
             #trim the front out
-            trim_1_integral[floor((self.exclusion_width + self.integration_range)/ 2):] = 0
-            trim_1_integral[:floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))] = 0
+            trim_1_integral[floor((self.exclusion_width + self.integration_range)/ 2):floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))] = 0
 
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
