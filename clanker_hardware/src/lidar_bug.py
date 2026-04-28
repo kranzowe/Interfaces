@@ -66,7 +66,6 @@ class WASDNode(Node):
         self.declare_parameter("steer_phi", 3.0)
         self.declare_parameter("steer_b", 0.1)
         self.declare_parameter("steer_b0", 90.0)
-        self.declare_parameter("nuetral_steer", 3)
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 21)
         self.declare_parameter("distribution_bias", .6)
@@ -144,7 +143,6 @@ class WASDNode(Node):
         #trim the back out
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
-        self.get_logger().info(f'{floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))}::{floor((self.exclusion_width + self.integration_range)/ 2)}')
 
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
@@ -159,6 +157,9 @@ class WASDNode(Node):
 
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        if self.reverse_driving:
+            self.optimal_angle = -self.optimal_angle
+        self.get_logger().info(f"{self.optimal_angle}")
 
 
         msg = LaserScan()
@@ -171,6 +172,9 @@ class WASDNode(Node):
             half_scan = trim_1_integral[:half_part].copy()
             trim_1_integral[:half_part] = trim_1_integral[half_part:]
             trim_1_integral[half_part:] = half_scan
+            half_dilation = self.dilated_points[:half_part].copy()
+            self.dilated_points[half_part:] = self.dilated_points[:half_part]
+            self.dilated_points[:half_part] = half_dilation
         msg.ranges = list(trim_1_integral / self.integration_range)
         msg.intensities = list(self.dilated_points)
 
