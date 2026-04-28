@@ -100,6 +100,12 @@ class WASDNode(Node):
 
 
         scan_ranges = np.array(msg.ranges)
+        if self.reverse_driving:
+            # Shift 180
+            half_part = int(scan_ranges)/2
+            half_scan = scan_ranges[:half_part]
+            scan_ranges[:half_part] = scan_ranges[half_part:]
+            scan_ranges[half_part:] = scan_part
 
         found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
@@ -135,13 +141,8 @@ class WASDNode(Node):
         trim_1_integral = width_integral[:self.lidar_resolution]
         trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
-        if not self.reverse_driving:
-            #trim the back out
-            trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
-            trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
-        else:
-            #trim the front out
-            trim_1_integral[floor((self.exclusion_width + self.integration_range)/ 2):floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))] = 0
+        trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
+        trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
 
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
@@ -199,10 +200,9 @@ class WASDNode(Node):
         beta_steer = self.steer_p * self.steer_lambda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
         control_input = -self.sign(s) * beta_steer - self.instant_angular_rate
 
-        if not self.reverse_driving:
-            msg.linear.x = self.ol_speed 
-        else:
-            msg.linear.x = -self.ol_speed 
+        msg.linear.x = self.ol_speed
+        if self.reverse_driving:
+            control_input = -control_input
         msg.angular.z = self.neutral_steer + control_input
 
         if(msg.angular.z > 1990):
