@@ -144,6 +144,7 @@ class WASDNode(Node):
         #trim the back out
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
+        self.get_logger().info(f'{floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2))}::{floor((self.exclusion_width + self.integration_range)/ 2)}')
 
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
@@ -215,9 +216,6 @@ class WASDNode(Node):
             noise_free_points[(idx - floor(self.noise_threshold / 2)):(idx +floor(self.noise_threshold / 2) + 1)] += inverse_points[idx] * np.ones(self.noise_threshold)
 
         noise_free_points = np.ones(self.lidar_resolution) - np.minimum(noise_free_points, 1.0)
-
-        self.get_logger().info(f"{noise_free_points}")
-
 
         self.dilated_points = np.zeros(self.lidar_resolution)
 
