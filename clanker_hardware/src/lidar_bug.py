@@ -54,7 +54,8 @@ class WASDNode(Node):
 
         #declare parameters
         self.declare_parameter("reverse_driving", False)
-        self.declare_parameter("ol_speed", 1500.0)
+        self.declare_parameter("neutral_speed", 1500.0)
+        self.declare_parameter("ol_speed", 0.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
         self.declare_parameter("neutral_steer", 1470.0)
@@ -69,9 +70,9 @@ class WASDNode(Node):
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 21)
         self.declare_parameter("distribution_bias", .6)
-        self.declare_parameter("avoidance_p", 50000)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
+        self.neutral_speed = self.get_parameter("neutral_speed").value
         self.neutral_steer = self.get_parameter("neutral_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
@@ -87,7 +88,6 @@ class WASDNode(Node):
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
-        self.avoidance_p = self.get_parameter("avoidance_p").value
 
 
         #start a timer to handle consistent message pub
@@ -139,8 +139,8 @@ class WASDNode(Node):
         for i in range(self.integration_range):
             width_integral[i:i+self.lidar_resolution] += scan_ranges
         
-        trim_1_integral = width_integral[:self.lidar_resolution]
-        trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
+        trim_1_integral = width_integral[self.integration_range/2:self.lidar_resolution+self.integration_range/2]
+        # trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
         #trim the back out
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
@@ -157,17 +157,8 @@ class WASDNode(Node):
         threshold_points = np.zeros((self.lidar_resolution))
         threshold_points[max_indicies] = 1.0
 
-        opt_angle = self.determine_optimal_angle(threshold_points)
-
-        min_dist_idx = np.argmin(scan_ranges)
-        min_dist = trim_1_integral[min_dist_idx]
-        if np.abs(min_dist_idx - opt_angle)/round(self.lidar_resolution / 360) < 90:
-            avoidance_adjustment = self.avoidance_p * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
-            self.get_logger().info(f"{avoidance_adjustment}")
-            opt_angle += avoidance_adjustment
-
         #take the average of the threshold points
-        self.optimal_angle = (opt_angle - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
 
@@ -215,7 +206,10 @@ class WASDNode(Node):
         beta_steer = self.steer_p * self.steer_lambda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
         control_input = -self.sign(s) * beta_steer - self.instant_angular_rate
 
-        msg.linear.x = self.ol_speed 
+        speed_term = -self.ol_speed
+        if self.reverse_driving:
+            speed_term = self.ol_speed
+        msg.linear.x = self.neutral_speed + speed_term
         msg.angular.z = self.neutral_steer + control_input
 
         if(msg.angular.z > 1990):
@@ -291,8 +285,7 @@ class WASDNode(Node):
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.distribution_bias = self.get_parameter("distribution_bias").value
-        self.avoidance_p = self.get_parameter("avoidance_p").value
-
+        self.neutral_speed = self.get_parameter("neutral_speed").value
 
         
 
