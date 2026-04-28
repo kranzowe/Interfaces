@@ -149,14 +149,13 @@ class WASDNode(Node):
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
-        self.get_logger().info(f"{threshold_points}")
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
         msg.ranges = list(trim_1_integral / self.integration_range)
-        msg.intensities = list(threshold_points)
+        msg.intensities = list(self.dilated_points)
 
 
         self.integral_scan_pub.publish(msg)
@@ -206,18 +205,18 @@ class WASDNode(Node):
             noise_free_points[(idx - floor(self.noise_threshold / 2)):(idx +floor(self.noise_threshold / 2) + 1)] += inverse_points[idx] * np.ones(self.noise_threshold)
 
         noise_free_points = np.ones(self.lidar_resolution) - np.maximum(noise_free_points, 1.0)
-        dilated_points = np.zeros(self.lidar_resolution)
+        self.dilated_points = np.zeros(self.lidar_resolution)
 
         #run a dilation
         for idx in range(floor((self.noise_threshold + 4)), self.lidar_resolution - floor((self.noise_threshold + 4) - 1)):
 
-            dilated_points[(idx - floor((self.noise_threshold + 4) / 2)):(idx +floor((self.noise_threshold + 4) / 2) + 1)] += noise_free_points[idx] * np.ones(self.noise_threshold + 4)
+            self.dilated_points[(idx - floor((self.noise_threshold + 4) / 2)):(idx +floor((self.noise_threshold + 4) / 2) + 1)] += noise_free_points[idx] * np.ones(self.noise_threshold + 4)
 
         middle_ind = 0 
         largest_middle_ind = 0
         for idx in range(1, self.lidar_resolution + 1):
             
-            if(dilated_points[self.lidar_resolution - idx] > 0.0):
+            if(self.dilated_points[self.lidar_resolution - idx] > 0.0):
                 if(middle_ind == 0):
                     middle_ind = self.lidar_resolution - idx
                 else:
