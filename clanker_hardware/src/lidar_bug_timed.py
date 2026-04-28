@@ -15,7 +15,9 @@ class TimedWASDNode(WASDNode):
         self.declare_parameter("run_duration", 10.0)
         self.declare_parameter("stop_speed", 1500.0)
         self.declare_parameter("odom_topic", "odom")
+        self.declare_parameter("odom_start_delay", 1.0)
 
+        self.node_start_time = self.get_ros_time_as_double()
         self.drive_start_time = None
         self.start_odom_xy = None
         self.latest_odom_xy = None
@@ -30,6 +32,10 @@ class TimedWASDNode(WASDNode):
         )
         self.stop_speed = float(self.get_parameter("stop_speed").value)
         self.odom_topic = self.get_parameter("odom_topic").value
+        self.odom_start_delay = max(
+            0.0,
+            float(self.get_parameter("odom_start_delay").value),
+        )
 
     def odom_cb(self, msg):
         self.latest_odom_xy = (
@@ -47,6 +53,15 @@ class TimedWASDNode(WASDNode):
 
         now = self.get_ros_time_as_double()
         if self.drive_start_time is None:
+            if now - self.node_start_time < self.odom_start_delay:
+                return
+
+            if self.latest_odom_xy is None:
+                self.get_logger().info(
+                    "Waiting for first odom message before starting timed run..."
+                )
+                return
+
             self.drive_start_time = now
             self.start_odom_xy = self.latest_odom_xy
             self.get_logger().info(
