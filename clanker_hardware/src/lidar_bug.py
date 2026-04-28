@@ -51,8 +51,8 @@ class WASDNode(Node):
         self.declare_parameter("integration_range", 10)   # degrees
         self.declare_parameter("exclusion_width", 150)    # degrees either side of rear to ignore
         self.declare_parameter("range_threshold", 0.6)
-        self.declare_parameter("left_search_limit", 20.0)
-        self.declare_parameter("right_search_limit", 90.0)
+        self.declare_parameter("left_search_limit", 10.0)
+        self.declare_parameter("right_search_limit", 120.0)
         self.declare_parameter("center_side_angle", 80.0)
         self.declare_parameter("center_side_width", 12.0)
         self.declare_parameter("center_wall_max", 1.8)
