@@ -162,13 +162,14 @@ class WASDNode(Node):
         min_dist_idx = np.argmin(scan_ranges)
         min_dist = trim_1_integral[min_dist_idx]
         if np.abs(min_dist_idx - opt_angle)/round(self.lidar_resolution / 360) < 90:
-            opt_angle += 15 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
+            avoidance_adjustment = 15 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
+            self.get_logger().info(f"{self.avoidance_adjustment}")
+            optimal_angle += avoidance_adjustment
 
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
-        self.get_logger().info(f"{self.optimal_angle}")
 
 
         msg = LaserScan()
