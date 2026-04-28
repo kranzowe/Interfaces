@@ -56,12 +56,12 @@ class WASDNode(Node):
         self.declare_parameter("ol_speed", 1500.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
-        self.declare_parameter("netrual_steer", 1470.0)
+        self.declare_parameter("neutral_steer", 1470.0)
         self.declare_parameter("lidar_res", 720)
         self.declare_parameter("integration_range", 10) #units are degrees
         self.declare_parameter("exclusion_width", 150)
         self.declare_parameter("steer_p", 50.0)
-        self.declare_parameter("steer_lamda", 0.3)
+        self.declare_parameter("steer_lambda", 0.3)
         self.declare_parameter("steer_phi", 3.0)
         self.declare_parameter("steer_b", 0.0)
         self.declare_parameter("steer_b0", 90.0)
@@ -69,18 +69,17 @@ class WASDNode(Node):
         self.declare_parameter("range_threshold", 0.6)
         self.declare_parameter("noise_threshold", 21)
         
-        self.neutral_steer = self.get_parameter("netrual_steer").value
+        self.neutral_steer = self.get_parameter("neutral_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
         self.tune_mode = self.get_parameter("tune_mode").value
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.steer_p = self.get_parameter("steer_p").value
-        self.steer_lamda = self.get_parameter("steer_lamda").value
+        self.steer_lambda = self.get_parameter("steer_lambda").value
         self.steer_phi = self.get_parameter("steer_phi").value
         self.steer_b = self.get_parameter("steer_b").value
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.range_threshold = self.get_parameter("range_threshold").value
-        self.neutral_steer = self.get_parameter("nuetral_steer").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
@@ -180,12 +179,12 @@ class WASDNode(Node):
         msg = Twist()
 
         #slide on that mode
-        s = (self.target_angle - self.optimal_angle) * self.steer_lamda + self.instant_angular_rate
-        beta_steer = self.steer_p * self.steer_lamda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
+        s = (self.target_angle - self.optimal_angle) * self.steer_lambda + self.instant_angular_rate
+        beta_steer = self.steer_p * self.steer_lambda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
         control_input = -self.sign(s) * beta_steer - self.instant_angular_rate
 
         msg.linear.x = self.ol_speed 
-        msg.angular.z = 1500.0 + control_input
+        msg.angular.z = self.neutral_steer + control_input
 
         if(msg.angular.z > 1990):
             msg.angular.z = 1990.0
@@ -236,7 +235,7 @@ class WASDNode(Node):
 
     def sign(self, val):
 
-        if(abs(val) < self.steer_phi * self.steer_lamda):
+        if(abs(val) < self.steer_phi * self.steer_lambda):
             return 0 
         
         return val / abs(val) 
@@ -250,13 +249,12 @@ class WASDNode(Node):
         self.ol_speed = self.get_parameter("ol_speed").value
         self.tune_mode = self.get_parameter("tune_mode").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
-        self.neutral_steer = self.get_parameter("netrual_steer").value
+        self.neutral_steer = self.get_parameter("neutral_steer").value
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.steer_p = self.get_parameter("steer_p").value
-        self.neutral_steer = self.get_parameter("nuetral_steer").value
-        self.steer_lamda = self.get_parameter("steer_lamda").value
+        self.steer_lambda = self.get_parameter("steer_lambda").value
         self.steer_phi = self.get_parameter("steer_phi").value
         self.steer_b = self.get_parameter("steer_b").value
         self.steer_b0 = self.get_parameter("steer_b0").value
