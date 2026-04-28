@@ -102,7 +102,7 @@ class WASDNode(Node):
         scan_ranges = np.array(msg.ranges)
         if self.reverse_driving:
             # Shift 180
-            half_part = int(scan_ranges.size)/2
+            half_part = int(scan_ranges.size/2)
             half_scan = scan_ranges[:half_part].copy()
             scan_ranges[:half_part] = scan_ranges[half_part:]
             scan_ranges[half_part:] = half_scan
@@ -169,7 +169,7 @@ class WASDNode(Node):
         msg.angle_increment = 2 * pi / self.lidar_resolution
         if self.reverse_driving:
             # Shift 180
-            half_part = int(trim_1_integral.size)/2
+            half_part = int(trim_1_integral.size/2)
             half_scan = trim_1_integral[:half_part].copy()
             trim_1_integral[:half_part] = trim_1_integral[half_part:]
             trim_1_integral[half_part:] = half_scan
