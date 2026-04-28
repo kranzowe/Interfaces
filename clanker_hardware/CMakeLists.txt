@@ -11,7 +11,7 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-file(GLOB PYTHON_EXEC ${CMAKE_CURRENT_SOURCE_DIR}/src/*.py)
+file(GLOB PYTHON_EXEC CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.py)
 
 install(PROGRAMS ${PYTHON_EXEC}
   DESTINATION lib/${PROJECT_NAME})
