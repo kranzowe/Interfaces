@@ -50,7 +50,8 @@ class TimedWASDNode(WASDNode):
             self.drive_start_time = now
             self.start_odom_xy = self.latest_odom_xy
             self.get_logger().info(
-                f"Timed lidar drive started for {self.run_duration:.2f} seconds."
+                f"Timed lidar drive started for {self.run_duration:.2f} seconds "
+                f"at ol_speed {self.ol_speed:.1f}; stop_speed {self.stop_speed:.1f}."
             )
 
         elapsed = now - self.drive_start_time
