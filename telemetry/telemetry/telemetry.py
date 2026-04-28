@@ -81,7 +81,7 @@ class TelemetryNode(Node):
         self.control_angle_arrow = None
 
         if debug:
-            self.control_angle = -np.pi/6
+            self.control_angle = -np.pi/12
             scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
             with open(scan_path, 'r') as f:
                 lidar_scan_load = json.load(f)
@@ -183,8 +183,8 @@ class TelemetryNode(Node):
         <html>
             <head></head>
             <body style="background-color: black;">
-                <h2 style="color: white; font-family: 'Lucida Console', Courier, monospace;">Clanker Collective Data Stream</h1>
-                <div style="display: flex; gap: 10px;">
+                <h2 style="color: white; text-align: center; font-family: 'Monaco', Courier, monospace;">Clanker Collective Telemetry Stream</h1>
+                <div style="display: flex; gap: 10px; padding: 10px;">
                     <meta http-equiv="refresh" content="{self.refresh_rate}">
                     <img src='data:image/png;base64,{imu_data}' style="width: 50%;"/>
                     <img src='data:image/png;base64,{scan_data}' style="width: 50%;"/>
