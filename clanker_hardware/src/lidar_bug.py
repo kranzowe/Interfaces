@@ -159,8 +159,6 @@ class WASDNode(Node):
 
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
-        if self.reverse_driving:
-            self.optimal_angle = -self.optimal_angle
 
 
         msg = LaserScan()
