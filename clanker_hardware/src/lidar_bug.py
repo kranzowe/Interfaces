@@ -141,6 +141,7 @@ class WASDNode(Node):
         trim_1_integral = width_integral[:self.lidar_resolution]
         trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
+        #trim the back out
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
 
@@ -156,14 +157,7 @@ class WASDNode(Node):
         threshold_points[max_indicies] = 1.0
 
         #take the average of the threshold points
-        forward_opt_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
-        if not self.reverse_driving:
-            self.optimal_angle = forward_opt_angle
-        else:
-            backwards_angle = 180 - forward_opt_angle
-            if backwards_angle < 0:
-                backwards_angle += 360
-            self.optimal_angle = backwards_angle
+        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
 
         msg = LaserScan()
@@ -200,9 +194,7 @@ class WASDNode(Node):
         beta_steer = self.steer_p * self.steer_lambda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
         control_input = -self.sign(s) * beta_steer - self.instant_angular_rate
 
-        msg.linear.x = self.ol_speed
-        if self.reverse_driving:
-            control_input = -control_input
+        msg.linear.x = self.ol_speed 
         msg.angular.z = self.neutral_steer + control_input
 
         if(msg.angular.z > 1990):
