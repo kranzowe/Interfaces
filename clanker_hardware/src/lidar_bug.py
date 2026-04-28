@@ -69,6 +69,7 @@ class WASDNode(Node):
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 21)
         self.declare_parameter("distribution_bias", .6)
+        self.declare_parameter("avoidance_distance", 0.5)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
         self.neutral_steer = self.get_parameter("neutral_steer").value
@@ -86,6 +87,7 @@ class WASDNode(Node):
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
+        self.avoidance_distance = self.get_parameter("avoidance_distance").value
 
 
         #start a timer to handle consistent message pub
@@ -105,6 +107,9 @@ class WASDNode(Node):
             half_scan = scan_ranges[:half_part].copy()
             scan_ranges[:half_part] = scan_ranges[half_part:]
             scan_ranges[half_part:] = half_scan
+
+        min_dist_idx = np.argmin(msg_ranges)
+        min_dist = scan_ranges[min_dist_idx]
 
         found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
@@ -155,8 +160,16 @@ class WASDNode(Node):
         threshold_points = np.zeros((self.lidar_resolution))
         threshold_points[max_indicies] = 1.0
 
+        opt_angle = self.determine_optimal_angle(threshold_points)
+        target_within_window = self.integration_range / 2
+        if min_dist < self.avoidance_distance:
+            if opt_angle - self.integration_range > min_dist_idx:
+                target_within_window = self.integration_range / 4
+            elif opt_angle < min_dist_idx:
+                target_within_window = self.integration_range * 3 / 4
+
         #take the average of the threshold points
-        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - target_within_window) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
         self.get_logger().info(f"{self.optimal_angle}")
@@ -281,6 +294,7 @@ class WASDNode(Node):
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.distribution_bias = self.get_parameter("distribution_bias").value
+        self.avoidance_distance = self.get_parameter("avoidance_distance").value
 
 
         
