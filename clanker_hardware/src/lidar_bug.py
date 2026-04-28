@@ -162,11 +162,8 @@ class WASDNode(Node):
 
         opt_angle = self.determine_optimal_angle(threshold_points)
         target_within_window = self.integration_range / 2
-        if min_dist < self.avoidance_distance:
-            if opt_angle - self.integration_range > min_dist_idx:
-                target_within_window = self.integration_range / 4
-            elif opt_angle < min_dist_idx:
-                target_within_window = self.integration_range * 3 / 4
+        if np.abs(min_dist_idx - (opt_angle - target_within_window))/round(self.lidar_resolution / 360) < 90:
+            target_within_window += self.integration_range/2 * (opt_angle - target_within_window - min_dist_idx)/round(self.lidar_resolution / 90) * msg.range_min/min_dist
 
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - target_within_window) / round(self.lidar_resolution / 360) - 180
