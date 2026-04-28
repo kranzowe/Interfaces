@@ -68,6 +68,7 @@ class WASDNode(Node):
         self.declare_parameter("nuetral_steer", 3)
         self.declare_parameter("range_threshold", 0.6)
         self.declare_parameter("noise_threshold", 21)
+        self.declare_parameter("distribution_bias", .6)
         
         self.neutral_steer = self.get_parameter("neutral_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
@@ -83,6 +84,8 @@ class WASDNode(Node):
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
+        self.distribution_bias = self.get_parameter("distribution_bias").value
+
 
         #start a timer to handle consistent message pub
         self.create_timer(0.1, self.pub_cb)
@@ -223,7 +226,7 @@ class WASDNode(Node):
                 if(middle_ind == 0):
                     middle_ind = self.lidar_resolution - idx
                 else:
-                    middle_ind -= .5
+                    middle_ind -= self.distribution_bias
 
                 largest_middle_ind = middle_ind
             else:
@@ -260,6 +263,7 @@ class WASDNode(Node):
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
+        self.distribution_bias = self.get_parameter("distribution_bias").value
 
 
         
