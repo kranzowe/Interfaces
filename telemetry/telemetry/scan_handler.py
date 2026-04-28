@@ -93,7 +93,7 @@ class ScanHandler:
                 pts = list(zip(self.scan_x, self.scan_y))
                 self.scatter_scan.set_offsets(pts)
             else:
-                self.scatter_scan.set_offsets([[]])
+                self.scatter_scan.set_offsets(np.empty((0, 2)))
         if self.integral_scan_x:
             if self.scatter_integral_scan is None:
                 self.scatter_integral_scan = self.ax_scan.scatter(self.integral_scan_x, self.integral_scan_y, c=self.integral_scan_int, cmap='summer', s=2)
@@ -102,7 +102,7 @@ class ScanHandler:
                 self.scatter_integral_scan.set_offsets(pts)
                 self.scatter_integral_scan.set_array(self.integral_scan_int)
             else:
-                self.scatter_integral_scan.set_offsets([[]])
+                self.scatter_integral_scan.set_offsets(np.empty((0, 2)))
         if self.control_angle is not None:
             arrow_len = 3
             if self.control_angle_arrow is None:
