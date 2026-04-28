@@ -204,7 +204,11 @@ class WASDNode(Node):
 
             noise_free_points[(idx - floor(self.noise_threshold / 2)):(idx +floor(self.noise_threshold / 2) + 1)] += inverse_points[idx] * np.ones(self.noise_threshold)
 
-        noise_free_points = np.ones(self.lidar_resolution) - np.maximum(noise_free_points, 1.0)
+        noise_free_points = np.ones(self.lidar_resolution) - np.minimum(noise_free_points, 1.0)
+
+        self.get_logger().info(f"{noise_free_points}")
+
+
         self.dilated_points = np.zeros(self.lidar_resolution)
 
         #run a dilation
