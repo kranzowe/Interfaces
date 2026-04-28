@@ -162,7 +162,7 @@ class WASDNode(Node):
         min_dist_idx = np.argmin(scan_ranges)
         min_dist = trim_1_integral[min_dist_idx]
         if np.abs(min_dist_idx - opt_angle)/round(self.lidar_resolution / 360) < 90:
-            avoidance_adjustment = 15 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
+            avoidance_adjustment = 3000 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
             self.get_logger().info(f"{avoidance_adjustment}")
             opt_angle += avoidance_adjustment
 
