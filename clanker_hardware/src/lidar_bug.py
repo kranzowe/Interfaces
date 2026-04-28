@@ -51,6 +51,14 @@ class WASDNode(Node):
         self.declare_parameter("integration_range", 10)   # degrees
         self.declare_parameter("exclusion_width", 150)    # degrees either side of rear to ignore
         self.declare_parameter("range_threshold", 0.6)
+        self.declare_parameter("left_search_limit", 20.0)
+        self.declare_parameter("right_search_limit", 90.0)
+        self.declare_parameter("center_side_angle", 80.0)
+        self.declare_parameter("center_side_width", 12.0)
+        self.declare_parameter("center_wall_max", 1.8)
+        self.declare_parameter("center_deadband", 0.08)
+        self.declare_parameter("center_gain", 10.0)
+        self.declare_parameter("center_max_angle", 10.0)
 
         self._load_params()
 
@@ -69,6 +77,30 @@ class WASDNode(Node):
         self.wall_ahead_distance = self.get_parameter("wall_ahead_distance").value
         self.lidar_resolution = self.get_parameter("lidar_res").value
         self.range_threshold = self.get_parameter("range_threshold").value
+        self.left_search_limit = max(
+            0.0, float(self.get_parameter("left_search_limit").value)
+        )
+        self.right_search_limit = max(
+            0.0, float(self.get_parameter("right_search_limit").value)
+        )
+        self.center_side_angle = max(
+            1.0, float(self.get_parameter("center_side_angle").value)
+        )
+        self.center_side_width = max(
+            1.0, float(self.get_parameter("center_side_width").value)
+        )
+        self.center_wall_max = max(
+            0.0, float(self.get_parameter("center_wall_max").value)
+        )
+        self.center_deadband = max(
+            0.0, float(self.get_parameter("center_deadband").value)
+        )
+        self.center_gain = max(
+            0.0, float(self.get_parameter("center_gain").value)
+        )
+        self.center_max_angle = max(
+            0.0, float(self.get_parameter("center_max_angle").value)
+        )
         deg_to_samples = self.lidar_resolution / 360.0
         self.integration_range = floor(
             self.get_parameter("integration_range").value * deg_to_samples
@@ -121,18 +153,23 @@ class WASDNode(Node):
         trim[:excl_half] = 0
         trim[self.lidar_resolution - excl_half:] = 0
 
-        max_val = np.max(trim)
+        search_trim = self._mask_search_sector(trim)
+
+        max_val = np.max(search_trim)
         if max_val > 0:
-            threshold_points = (trim > max_val * self.range_threshold).astype(float)
+            threshold_points = (
+                search_trim > max_val * self.range_threshold
+            ).astype(float)
         else:
             threshold_points = np.zeros(self.lidar_resolution)
 
         raw_idx = self._find_widest_gap_center(threshold_points)
-        self.optimal_angle = (
+        gap_angle = (
             (raw_idx - self.integration_range / 2.0)
             / round(self.lidar_resolution / 360)
             - 180.0
         )
+        self.optimal_angle = gap_angle + self._center_angle(scan_ranges)
 
         scan_out = LaserScan()
         scan_out.angle_min = -pi + pi / self.lidar_resolution
@@ -186,6 +223,52 @@ class WASDNode(Node):
                     found_first_valid = True
                 idx += 1
         return scan_ranges
+
+    def _angle_to_index(self, angle_deg):
+        angle_deg = max(-180.0, min(180.0, angle_deg))
+        idx = round((angle_deg + 180.0) * self.lidar_resolution / 360.0)
+        return max(0, min(self.lidar_resolution - 1, int(idx)))
+
+    def _mask_search_sector(self, threshold_points):
+        """Keep the simple gap finder, but only let front/right openings win."""
+        masked = np.zeros_like(threshold_points)
+        start = self._angle_to_index(-self.right_search_limit)
+        end = self._angle_to_index(self.left_search_limit)
+        masked[start:end + 1] = threshold_points[start:end + 1]
+        return masked
+
+    def _arc_clearance(self, scan_ranges, angle_deg, width_deg):
+        center = self._angle_to_index(angle_deg)
+        half_width = max(1, round(width_deg * self.lidar_resolution / 360.0))
+        start = max(0, center - half_width)
+        end = min(self.lidar_resolution, center + half_width + 1)
+        vals = scan_ranges[start:end]
+        vals = vals[np.isfinite(vals)]
+        if len(vals) == 0:
+            return float('inf')
+        return float(np.median(vals))
+
+    def _center_angle(self, scan_ranges):
+        """Small corridor-centering trim. Open side spaces are ignored."""
+        left = self._arc_clearance(
+            scan_ranges,
+            self.center_side_angle,
+            self.center_side_width,
+        )
+        right = self._arc_clearance(
+            scan_ranges,
+            -self.center_side_angle,
+            self.center_side_width,
+        )
+        if left > self.center_wall_max or right > self.center_wall_max:
+            return 0.0
+
+        error = left - right
+        if abs(error) <= self.center_deadband:
+            return 0.0
+        error -= self.center_deadband * np.sign(error)
+        center_angle = self.center_gain * error
+        return max(-self.center_max_angle, min(self.center_max_angle, center_angle))
 
     def _find_widest_gap_center(self, threshold_points):
         """Dilate threshold map and return the midpoint index of the widest open region."""
