@@ -102,7 +102,7 @@ class WASDNode(Node):
         scan_ranges = np.array(msg.ranges)
         if self.reverse_driving:
             # Shift 180
-            half_part = int(scan_ranges)/2
+            half_part = int(scan_ranges.size)/2
             half_scan = scan_ranges[:half_part].copy()
             scan_ranges[:half_part] = scan_ranges[half_part:]
             scan_ranges[half_part:] = half_scan
@@ -159,12 +159,20 @@ class WASDNode(Node):
 
         #take the average of the threshold points
         self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        if self.reverse_driving:
+            self.optimal_angle = -self.optimal_angle
 
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
+        if self.reverse_driving:
+            # Shift 180
+            half_part = int(trim_1_integral.size)/2
+            half_scan = trim_1_integral[:half_part].copy()
+            trim_1_integral[:half_part] = trim_1_integral[half_part:]
+            trim_1_integral[half_part:] = half_scan
         msg.ranges = list(trim_1_integral / self.integration_range)
         msg.intensities = list(self.dilated_points)
 
