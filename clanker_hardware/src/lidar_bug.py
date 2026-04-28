@@ -69,7 +69,7 @@ class WASDNode(Node):
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 21)
         self.declare_parameter("distribution_bias", .6)
-        self.declare_parameter("avoidance_p", 30000)
+        self.declare_parameter("avoidance_p", 50000)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
         self.neutral_steer = self.get_parameter("neutral_steer").value
@@ -167,7 +167,7 @@ class WASDNode(Node):
             opt_angle += avoidance_adjustment
 
         #take the average of the threshold points
-        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        self.optimal_angle = (opt_angle - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
 
