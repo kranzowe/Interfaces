@@ -33,8 +33,9 @@ class WASDNode(Node):
         self.declare_parameter("ol_speed", 1500.0)
         # Tune neutral_steer until the rover goes straight with no gap error
         self.declare_parameter("neutral_steer", 1470.0)
-        # Set steer_sign to -1.0 if the rover steers the wrong direction
-        self.declare_parameter("steer_sign", 1.0)
+        # Hardware sign: this rover appears to turn right on higher steering PWM.
+        # Set to 1.0 if right/left steering commands are reversed on your setup.
+        self.declare_parameter("steer_sign", -1.0)
         # Proportional gain: PWM units per degree of gap error
         self.declare_parameter("steer_p", 3.5)
         # Derivative gain: PWM units per degree/s of angular rate
