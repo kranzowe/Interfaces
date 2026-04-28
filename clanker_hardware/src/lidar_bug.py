@@ -53,7 +53,7 @@ class WASDNode(Node):
         self.optimal_angle_pub = self.create_publisher(Float32, "optimal_angle", 10)
 
         #declare parameters
-        self.declare_prameter("reverse_driving", False)
+        self.declare_parameter("reverse_driving", False)
         self.declare_parameter("ol_speed", 1500.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
@@ -266,6 +266,7 @@ class WASDNode(Node):
     
     def update_param(self):
 
+        self.reverse_driving = self.get_parameter("reverse_driving").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.tune_mode = self.get_parameter("tune_mode").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
