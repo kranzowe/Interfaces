@@ -146,9 +146,6 @@ class WASDNode(Node):
         trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
         trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
 
-        min_dist_idx = np.argmin(trim_1_integral)
-        min_dist = trim_1_integral[min_dist_idx]
-
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
 
@@ -161,12 +158,14 @@ class WASDNode(Node):
         threshold_points[max_indicies] = 1.0
 
         opt_angle = self.determine_optimal_angle(threshold_points)
-        target_within_window = self.integration_range / 2
-        if np.abs(min_dist_idx - (opt_angle - target_within_window))/round(self.lidar_resolution / 360) < 90:
-            target_within_window += self.integration_range/2 * (opt_angle - target_within_window - min_dist_idx)/round(self.lidar_resolution / 90) * msg.range_min/min_dist
+
+        min_dist_idx = np.argmin(scan_ranges)
+        min_dist = trim_1_integral[min_dist_idx]
+        if np.abs(min_dist_idx - opt_angle)/round(self.lidar_resolution / 360) < 90:
+            opt_angle += 15 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
 
         #take the average of the threshold points
-        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - target_within_window) / round(self.lidar_resolution / 360) - 180
+        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
         self.get_logger().info(f"{self.optimal_angle}")
