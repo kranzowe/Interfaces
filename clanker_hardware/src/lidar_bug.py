@@ -69,7 +69,7 @@ class WASDNode(Node):
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 21)
         self.declare_parameter("distribution_bias", .6)
-        self.declare_parameter("avoidance_distance", 0.5)
+        self.declare_parameter("avoidance_p", 30000)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
         self.neutral_steer = self.get_parameter("neutral_steer").value
@@ -87,7 +87,7 @@ class WASDNode(Node):
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
-        self.avoidance_distance = self.get_parameter("avoidance_distance").value
+        self.avoidance_p = self.get_parameter("avoidance_p").value
 
 
         #start a timer to handle consistent message pub
@@ -162,7 +162,7 @@ class WASDNode(Node):
         min_dist_idx = np.argmin(scan_ranges)
         min_dist = trim_1_integral[min_dist_idx]
         if np.abs(min_dist_idx - opt_angle)/round(self.lidar_resolution / 360) < 90:
-            avoidance_adjustment = 3000 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
+            avoidance_adjustment = 30000 * np.sign(opt_angle - min_dist_idx)/(np.abs(opt_angle - min_dist_idx)+1) * msg.range_min/min_dist
             self.get_logger().info(f"{avoidance_adjustment}")
             opt_angle += avoidance_adjustment
 
@@ -291,7 +291,7 @@ class WASDNode(Node):
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.distribution_bias = self.get_parameter("distribution_bias").value
-        self.avoidance_distance = self.get_parameter("avoidance_distance").value
+        self.avoidance_p = self.get_parameter("avoidance_p").value
 
 
         
