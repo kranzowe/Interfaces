@@ -69,12 +69,13 @@ class ImuHandler:
         self.last_imu = time
 
     def update_imu_plot(self):
+        now = self.node.get_clock().now().nanoseconds / 1e9
         if self.imu_time_buffer:
             if self.line_x is None:
                 self.line_x, = self.ax_x.plot(self.imu_time_buffer, self.imu_x_buffer, c='g')
                 self.line_y, = self.ax_y.plot(self.imu_time_buffer, self.imu_y_buffer, c='g')
                 self.line_z, = self.ax_z.plot(self.imu_time_buffer, self.imu_z_buffer, c='g')
-            else:
+            elif now - self.last_imu < self.imu_time_window_s + self.node.gc_rate:
                 self.ax_x.set_xlim([np.min(self.imu_time_buffer), np.max(self.imu_time_buffer)])
                 self.ax_y.set_xlim([np.min(self.imu_time_buffer), np.max(self.imu_time_buffer)])
                 self.ax_z.set_xlim([np.min(self.imu_time_buffer), np.max(self.imu_time_buffer)])
@@ -84,4 +85,8 @@ class ImuHandler:
                 self.line_x.set_data(self.imu_time_buffer, self.imu_x_buffer)
                 self.line_y.set_data(self.imu_time_buffer, self.imu_y_buffer)
                 self.line_z.set_data(self.imu_time_buffer, self.imu_z_buffer)
+            else:
+                self.line_x.set_data([], [])
+                self.line_y.set_data([], [])
+                self.line_z.set_data([], [])
         return self.imu_fig

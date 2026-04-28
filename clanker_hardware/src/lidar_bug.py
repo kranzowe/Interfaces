@@ -103,9 +103,9 @@ class WASDNode(Node):
         if self.reverse_driving:
             # Shift 180
             half_part = int(scan_ranges)/2
-            half_scan = scan_ranges[:half_part]
+            half_scan = scan_ranges[:half_part].copy()
             scan_ranges[:half_part] = scan_ranges[half_part:]
-            scan_ranges[half_part:] = scan_part
+            scan_ranges[half_part:] = half_scan
 
         found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
