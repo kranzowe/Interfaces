@@ -36,9 +36,9 @@ class WASDNode(Node):
         # Set steer_sign to -1.0 if the rover steers the wrong direction
         self.declare_parameter("steer_sign", 1.0)
         # Proportional gain: PWM units per degree of gap error
-        self.declare_parameter("steer_p", 5.0)
+        self.declare_parameter("steer_p", 4.0)
         # Derivative gain: PWM units per degree/s of angular rate
-        self.declare_parameter("steer_d", 0.3)
+        self.declare_parameter("steer_d", 0.1)
         # Normal saturation angle — errors beyond this are clamped in straight sections
         self.declare_parameter("steer_phi", 45.0)
         # Maximum steering correction in PWM units
@@ -52,28 +52,32 @@ class WASDNode(Node):
         self.declare_parameter("exclusion_width", 150)    # degrees either side of rear to ignore
         self.declare_parameter("range_threshold", 0.6)
         # Right-only course policy. Positive angles are left, negative angles are right.
-        self.declare_parameter("max_left_correction_angle", 12.0)
-        self.declare_parameter("front_angle_limit", 35.0)
-        self.declare_parameter("right_turn_angle", 75.0)
+        self.declare_parameter("max_left_correction_angle", 6.0)
+        self.declare_parameter("front_angle_limit", 28.0)
+        self.declare_parameter("right_turn_angle", 45.0)
+        # Legacy parameters kept declared so old launch files do not break.
         self.declare_parameter("right_turn_hold_time", 0.8)
         self.declare_parameter("right_turn_cooldown", 1.0)
         self.declare_parameter("right_turn_min_width", 22.0)
         self.declare_parameter("right_turn_clearance", 1.05)
-        self.declare_parameter("right_turn_min_angle", -110.0)
-        self.declare_parameter("right_turn_max_angle", -35.0)
+        self.declare_parameter("right_turn_min_angle", -85.0)
+        self.declare_parameter("right_turn_max_angle", -30.0)
+        self.declare_parameter("right_turn_start_distance", 0.95)
+        self.declare_parameter("right_turn_commit_distance", 0.55)
         self.declare_parameter("min_forward_clearance", 0.75)
+        self.declare_parameter("wall_avoid_distance", 0.65)
+        self.declare_parameter("wall_avoid_angle", 12.0)
         self.declare_parameter("candidate_window", 16.0)
         self.declare_parameter("candidate_step", 3.0)
         self.declare_parameter("clearance_percentile", 35.0)
         self.declare_parameter("max_usable_range", 4.0)
         self.declare_parameter("forward_preference", 0.25)
         self.declare_parameter("right_preference", 0.12)
+        self.declare_parameter("max_heading_step", 8.0)
+        self.declare_parameter("turn_steer_phi", 55.0)
 
         self._load_params()
-        self.right_turn_until = 0.0
-        self.last_right_turn_time = -float('inf')
-        self.active_right_turn_angle = -self.right_turn_angle
-        self.right_turn_count = 0
+        self.filtered_angle = 0.0
 
         self.create_timer(0.1, self.pub_cb)
         self.create_timer(1.0, self.update_param)
@@ -122,8 +126,20 @@ class WASDNode(Node):
                 self.right_turn_max_angle,
                 self.right_turn_min_angle,
             )
+        self.right_turn_start_distance = max(
+            0.0, float(self.get_parameter("right_turn_start_distance").value)
+        )
+        self.right_turn_commit_distance = max(
+            0.0, float(self.get_parameter("right_turn_commit_distance").value)
+        )
         self.min_forward_clearance = max(
             0.0, float(self.get_parameter("min_forward_clearance").value)
+        )
+        self.wall_avoid_distance = max(
+            0.0, float(self.get_parameter("wall_avoid_distance").value)
+        )
+        self.wall_avoid_angle = max(
+            0.0, float(self.get_parameter("wall_avoid_angle").value)
         )
         self.candidate_window = max(
             1.0, float(self.get_parameter("candidate_window").value)
@@ -142,6 +158,12 @@ class WASDNode(Node):
         )
         self.right_preference = max(
             0.0, float(self.get_parameter("right_preference").value)
+        )
+        self.max_heading_step = max(
+            1.0, float(self.get_parameter("max_heading_step").value)
+        )
+        self.turn_steer_phi = max(
+            self.steer_phi, float(self.get_parameter("turn_steer_phi").value)
         )
         deg_to_samples = self.lidar_resolution / 360.0
         self.integration_range = floor(
@@ -203,7 +225,8 @@ class WASDNode(Node):
         else:
             threshold_points = np.zeros(self.lidar_resolution)
 
-        self.optimal_angle = self._choose_right_only_heading(score_ranges)
+        desired_angle = self._choose_right_only_heading(score_ranges)
+        self.optimal_angle = self._smooth_heading(desired_angle)
 
         scan_out = LaserScan()
         scan_out.angle_min = -pi + pi / self.lidar_resolution
@@ -292,33 +315,33 @@ class WASDNode(Node):
         return float(np.percentile(vals, self.clearance_percentile))
 
     def _choose_right_only_heading(self, scan_ranges):
-        """Prefer forward motion, anticipate valid right openings, and reject hard left turns."""
-        right_open, right_angle, right_width = self._detect_right_turn(scan_ranges)
-        can_start_turn = (
-            right_open
-            and self.current_time >= self.right_turn_until
-            and self.current_time - self.last_right_turn_time
-            >= self.right_turn_hold_time + self.right_turn_cooldown
+        """Stay centered forward, only ramp into right turns when the front closes."""
+        center_clearance = self._arc_clearance(scan_ranges, 0.0)
+        wall_heading = self._wall_avoid_heading(scan_ranges)
+
+        if center_clearance >= self.right_turn_start_distance:
+            return wall_heading
+
+        right_open, right_angle, _ = self._detect_right_turn(scan_ranges)
+        if right_open:
+            turn_gain = self._turn_gain(center_clearance)
+            return (1.0 - turn_gain) * wall_heading + turn_gain * right_angle
+
+        near_heading, near_clearance = self._best_forward_heading(
+            scan_ranges,
+            max_left_angle=min(self.max_left_correction_angle, self.front_angle_limit),
         )
+        if near_clearance >= self.min_forward_clearance:
+            return near_heading
 
-        if can_start_turn:
-            self.active_right_turn_angle = right_angle
-            self.right_turn_until = self.current_time + self.right_turn_hold_time
-            self.last_right_turn_time = self.current_time
-            self.right_turn_count += 1
-            self.get_logger().info(
-                f"Right turn {self.right_turn_count}: heading {right_angle:.1f} deg, "
-                f"open width {right_width:.1f} deg."
-            )
+        return -self.right_turn_angle
 
-        if self.current_time < self.right_turn_until:
-            return self.active_right_turn_angle
-
-        forward_clearance = self._arc_clearance(scan_ranges, 0.0)
-        if forward_clearance < self.min_forward_clearance:
-            return -self.right_turn_angle
-
-        return self._choose_forward_heading(scan_ranges)
+    def _turn_gain(self, center_clearance):
+        span = self.right_turn_start_distance - self.right_turn_commit_distance
+        if span <= 0.0:
+            return 1.0
+        gain = (self.right_turn_start_distance - center_clearance) / span
+        return max(0.0, min(1.0, gain))
 
     def _detect_right_turn(self, scan_ranges):
         angles = np.arange(
@@ -339,6 +362,11 @@ class WASDNode(Node):
         longest_start, longest_len = self._longest_true_run(open_mask)
         open_width = longest_len * self.candidate_step
 
+        entry_clearance = min(
+            self._arc_clearance(scan_ranges, -30.0, 10.0),
+            self._arc_clearance(scan_ranges, -55.0, 12.0),
+        )
+
         if longest_len > 0:
             segment = slice(longest_start, longest_start + longest_len)
             segment_scores = clearances[segment]
@@ -347,23 +375,63 @@ class WASDNode(Node):
 
         right_angle = max(
             -self.right_turn_angle,
-            min(-35.0, best_angle),
+            min(-20.0, best_angle),
         )
-        return open_width >= self.right_turn_min_width, right_angle, open_width
+        is_open = (
+            open_width >= self.right_turn_min_width
+            and entry_clearance >= self.min_forward_clearance
+        )
+        return is_open, right_angle, open_width
 
-    def _choose_forward_heading(self, scan_ranges):
+    def _wall_avoid_heading(self, scan_ranges):
+        left_clearance = min(
+            self._arc_clearance(scan_ranges, 45.0, 12.0),
+            self._arc_clearance(scan_ranges, 75.0, 12.0),
+        )
+        right_clearance = min(
+            self._arc_clearance(scan_ranges, -45.0, 12.0),
+            self._arc_clearance(scan_ranges, -75.0, 12.0),
+        )
+
+        heading = 0.0
+        if right_clearance < self.wall_avoid_distance:
+            closeness = 1.0 - right_clearance / self.wall_avoid_distance
+            heading += self.wall_avoid_angle * closeness
+        if left_clearance < self.wall_avoid_distance:
+            closeness = 1.0 - left_clearance / self.wall_avoid_distance
+            heading -= self.wall_avoid_angle * closeness
+
         max_left = min(self.max_left_correction_angle, self.front_angle_limit)
+        return max(-self.front_angle_limit, min(max_left, heading))
+
+    def _smooth_heading(self, desired_angle):
+        delta = desired_angle - self.filtered_angle
+        delta = max(-self.max_heading_step, min(self.max_heading_step, delta))
+        self.filtered_angle += delta
+        return self.filtered_angle
+
+    def _choose_forward_heading(self, scan_ranges, allow_left):
+        max_left = 0.0
+        if allow_left:
+            max_left = min(self.max_left_correction_angle, self.front_angle_limit)
+        best_angle, _ = self._best_forward_heading(scan_ranges, max_left)
+        return best_angle
+
+    def _best_forward_heading(self, scan_ranges, max_left_angle):
+        max_left = min(max(0.0, max_left_angle), self.front_angle_limit)
         angles = np.arange(
             -self.front_angle_limit,
             max_left + self.candidate_step,
             self.candidate_step,
         )
         if len(angles) == 0:
-            return 0.0
+            return 0.0, 0.0
 
         scores = []
+        clearances = []
         for angle in angles:
             clearance = self._arc_clearance(scan_ranges, angle)
+            clearances.append(clearance)
             forward_bonus = self.forward_preference * (
                 1.0 - min(abs(angle) / self.front_angle_limit, 1.0)
             )
@@ -372,8 +440,10 @@ class WASDNode(Node):
             )
             scores.append(clearance + forward_bonus + right_bonus)
 
-        best_angle = float(angles[int(np.argmax(scores))])
-        return max(-self.front_angle_limit, min(max_left, best_angle))
+        best_idx = int(np.argmax(scores))
+        best_angle = float(angles[best_idx])
+        best_angle = max(-self.front_angle_limit, min(max_left, best_angle))
+        return best_angle, float(clearances[best_idx])
 
     @staticmethod
     def _longest_true_run(mask):
@@ -430,11 +500,13 @@ class WASDNode(Node):
         # error > 0 means gap is to the left; error < 0 means gap is to the right
         error = self.optimal_angle - self.target_angle
 
-        # When a wall is close ahead, scale steer_phi up toward 90° so the rover
-        # commands a hard turn instead of a capped modest correction.
+        # When a wall is close ahead, allow a little more right steering without
+        # jumping to a hard 90° target.
         if self.wall_ahead < self.wall_ahead_distance:
             proximity = 1.0 - (self.wall_ahead / self.wall_ahead_distance)
-            effective_phi = self.steer_phi + (90.0 - self.steer_phi) * proximity
+            effective_phi = self.steer_phi + (
+                self.turn_steer_phi - self.steer_phi
+            ) * proximity
         else:
             effective_phi = self.steer_phi
 
