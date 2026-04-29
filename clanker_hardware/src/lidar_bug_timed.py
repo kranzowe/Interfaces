@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rclpy
+from rclpy.qos import qos_profile_sensor_data
 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -17,7 +18,7 @@ class TimedLidarBugNode(LidarBugNode):
         self.declare_parameter("odom_topic", "odom")
         self.declare_parameter("start_delay", 0.0)
         self.declare_parameter("odom_start_delay", 0.0)
-        self.declare_parameter("require_odom", False)
+        self.declare_parameter("require_odom", True)
 
         self.node_start_time = self.get_ros_time_as_double()
         self.drive_start_time = None
@@ -27,7 +28,9 @@ class TimedLidarBugNode(LidarBugNode):
         self.waiting_for_odom_logged = False
         self.run_complete = False
         self._load_timed_params()
-        self.create_subscription(Odometry, self.odom_topic, self.odom_cb, 10)
+        self.create_subscription(
+            Odometry, self.odom_topic, self.odom_cb, qos_profile_sensor_data
+        )
 
     def _load_timed_params(self):
         self.run_duration = max(

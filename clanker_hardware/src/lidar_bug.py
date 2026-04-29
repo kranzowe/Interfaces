@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
@@ -45,8 +46,12 @@ class LidarBugNode(Node):
         super().__init__("lb_node")
 
         #subscribe to the scan data
-        self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
-        self.create_subscription(Vector3, "/imu/gyro", self.gyro_cb, 10)
+        self.create_subscription(
+            LaserScan, "/scan", self.scan_cb, qos_profile_sensor_data
+        )
+        self.create_subscription(
+            Vector3, "/imu/gyro", self.gyro_cb, qos_profile_sensor_data
+        )
 
 
         #initialize the velocity publisher
