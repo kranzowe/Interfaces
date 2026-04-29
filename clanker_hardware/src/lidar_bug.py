@@ -184,10 +184,13 @@ class LidarBugNode(Node):
 
         msg = Float32()
         msg.data = self.optimal_angle
+        if self.reverse_driving:
+            msg.data = (180 - self.optimal_angle)%360
         self.optimal_angle_pub.publish(msg)
 
-        if(self.previous_time == 0):
+        if(self.previous_time != 0):
             self.instant_angular_rate = (self.optimal_angle - self.previous_angle) / (self.current_time - self.previous_time)
+            self.previous_angle = self.optimal_angle
 
 
         self.previous_time = self.current_time
