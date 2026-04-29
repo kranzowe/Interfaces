@@ -169,7 +169,7 @@ class LidarBugNode(Node):
         self.optimal_angle = self.determine_optimal_angle(threshold_points) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
-        self.get_logger().info(f"{self.optimal_angle}")
+        # self.get_logger().info(f"{self.optimal_angle}")
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
