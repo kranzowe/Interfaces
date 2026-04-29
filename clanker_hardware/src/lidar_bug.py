@@ -64,13 +64,13 @@ class LidarBugNode(Node):
         self.declare_parameter("lidar_res", 720)
         self.declare_parameter("integration_range", 16) #units are degrees
         self.declare_parameter("exclusion_width", 150)
-        self.declare_parameter("steer_p", 25.0)
+        self.declare_parameter("steer_p", 35.0)
         self.declare_parameter("steer_lambda", 0.15)
-        self.declare_parameter("steer_phi", 3.0)
+        self.declare_parameter("steer_phi", 0.3)
         self.declare_parameter("steer_b", 0.1)
-        self.declare_parameter("steer_b0", 90.0)
+        self.declare_parameter("steer_b0", 50.0)
         self.declare_parameter("range_threshold", 0.5)
-        self.declare_parameter("noise_threshold", 21)
+        self.declare_parameter("noise_threshold", 31)
         self.declare_parameter("distribution_bias", .5)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
