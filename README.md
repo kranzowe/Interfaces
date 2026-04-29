@@ -14,6 +14,12 @@ ros2 launch rplidar_ros rplidar_a1_launch.py
 ros2 run clanker_hardware lidar_bug.py --ros-args -p ol_speed:=1390.0
 ```
 
+- To run the same right-turn lidar behavior while driving in reverse, use the reverse script.
+  Reverse PWM is on the opposite side of neutral, so start around `1610.0` and tune from there.
+```bash
+ros2 run clanker_hardware lidar_bug_reverse.py --ros-args -p ol_speed:=1610.0
+```
+
 
 # How to Run Auntonomous Localization with Lidar Bug Script
 

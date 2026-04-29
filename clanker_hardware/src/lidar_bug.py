@@ -13,6 +13,10 @@ import numpy as np
 
 class WASDNode(Node):
 
+    node_name = "wasd_node"
+    ol_speed_default = 1500.0
+    steer_sign_default = 1.0
+
     optimal_angle = 0.0
     target_angle = 0.0
     instant_angular_rate = 0.0
@@ -22,7 +26,7 @@ class WASDNode(Node):
     wall_ahead = float('inf')
 
     def __init__(self):
-        super().__init__("wasd_node")
+        super().__init__(self.node_name)
 
         self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
 
@@ -30,11 +34,11 @@ class WASDNode(Node):
         self.integral_scan_pub = self.create_publisher(LaserScan, "integral_scan", 10)
         self.optimal_angle_pub = self.create_publisher(Float32, "optimal_angle", 10)
 
-        self.declare_parameter("ol_speed", 1500.0)
+        self.declare_parameter("ol_speed", self.ol_speed_default)
         # Tune neutral_steer until the rover goes straight with no gap error
         self.declare_parameter("neutral_steer", 1470.0)
         # Set steer_sign to -1.0 if the rover steers the wrong direction
-        self.declare_parameter("steer_sign", 1.0)
+        self.declare_parameter("steer_sign", self.steer_sign_default)
         # Proportional gain: PWM units per degree of gap error
         self.declare_parameter("steer_p", 5.0)
         # Derivative gain: PWM units per degree/s of angular rate
@@ -129,9 +133,10 @@ class WASDNode(Node):
                 self.get_parameter("exclusion_width").value * deg_to_samples
             )
 
+        scan_ranges = self._prepare_scan_ranges(scan_ranges)
         scan_ranges = self._fill_gaps(scan_ranges)
 
-        # Measure closest obstacle in the forward ±20° arc to detect approaching walls
+        # Measure closest obstacle in the travel-direction ±20° arc.
         fwd = self.lidar_resolution // 2
         fwd_width = round(20 * self.lidar_resolution / 360)
         fwd_slice = scan_ranges[max(0, fwd - fwd_width): fwd + fwd_width]
@@ -146,9 +151,9 @@ class WASDNode(Node):
         trim = width_integral[:self.lidar_resolution].copy()
         trim[:self.integration_range] = width_integral[self.lidar_resolution:]
 
-        # Symmetric rear exclusion zone.
-        # Index 0 = -180° (directly behind), index lidar_res/2 = 0° (forward).
-        # Zero out exclusion_width/2 samples from each end (both sides of rear).
+        # Symmetric exclusion zone opposite the current travel direction.
+        # Index 0 = -180°, index lidar_res/2 = 0° in the internal scan frame.
+        # Zero out exclusion_width/2 samples from each end.
         excl_half = self.exclusion_width // 2
         trim[:excl_half] = 0
         trim[self.lidar_resolution - excl_half:] = 0
@@ -193,6 +198,9 @@ class WASDNode(Node):
         self.previous_angle = self.optimal_angle
         self.previous_time = self.current_time
 
+    def _prepare_scan_ranges(self, scan_ranges):
+        return scan_ranges
+
     def _fill_gaps(self, scan_ranges):
         """Linearly interpolate across infinite (no-return) scan gaps."""
         n = len(scan_ranges)
@@ -230,7 +238,7 @@ class WASDNode(Node):
         return max(0, min(self.lidar_resolution - 1, int(idx)))
 
     def _mask_search_sector(self, threshold_points):
-        """Keep the simple gap finder, but only let front/right openings win."""
+        """Keep the simple gap finder, but only let travel/right openings win."""
         masked = np.zeros_like(threshold_points)
         start = self._angle_to_index(-self.right_search_limit)
         end = self._angle_to_index(self.left_search_limit)
@@ -306,8 +314,8 @@ class WASDNode(Node):
         # error > 0 means gap is to the left; error < 0 means gap is to the right
         error = self.optimal_angle - self.target_angle
 
-        # When a wall is close ahead, scale steer_phi up toward 90° so the rover
-        # commands a hard turn instead of a capped modest correction.
+        # When a wall is close in the travel direction, scale steer_phi up toward
+        # 90° so the rover commands a hard turn instead of a capped correction.
         if self.wall_ahead < self.wall_ahead_distance:
             proximity = 1.0 - (self.wall_ahead / self.wall_ahead_distance)
             effective_phi = self.steer_phi + (90.0 - self.steer_phi) * proximity
