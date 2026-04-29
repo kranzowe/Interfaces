@@ -21,7 +21,7 @@ INCREMENT_TURN = 0.2
 
 STALE_TIME = 0.25
 
-class WASDNode(Node):
+class LidarBugNode(Node):
 
     direction = 0
     speed = MIN_SPEED
@@ -41,7 +41,7 @@ class WASDNode(Node):
     current_time = 0
 
     def __init__(self):
-        super().__init__("wasd_node")
+        super().__init__("lb_node")
 
         #subscribe to the scan data
         self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
@@ -139,7 +139,7 @@ class WASDNode(Node):
         for i in range(self.integration_range):
             width_integral[i:i+self.lidar_resolution] += scan_ranges
         
-        trim_1_integral = width_integral[self.integration_range/2:self.lidar_resolution+self.integration_range/2]
+        trim_1_integral = width_integral[int(self.integration_range/2):self.lidar_resolution+int(self.integration_range/2)]
         # trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
         #trim the back out
@@ -158,10 +158,10 @@ class WASDNode(Node):
         threshold_points[max_indicies] = 1.0
 
         #take the average of the threshold points
-        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
+        self.optimal_angle = self.determine_optimal_angle(threshold_points) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
-
+        self.get_logger().info(f"{self.optimal_angle}")
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
@@ -265,7 +265,8 @@ class WASDNode(Node):
 
     def get_ros_time_as_double(self):
         #return the ros2 time as float
-        return self.get_clock().now().seconds_nanoseconds()[1] * 1e-9 + self.get_clock().now().seconds_nanoseconds()[0]
+        now = self.get_clock().now().seconds_nanoseconds()
+        return now[1] * 1e-9 + now[0]
     
     def update_param(self):
 
@@ -297,14 +298,14 @@ class WASDNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    wasd_node = WASDNode()
+    lb_node = LidarBugNode()
 
-    rclpy.spin(wasd_node)
+    rclpy.spin(lb_node)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    wasd_node.destroy_node()
+    lb_node.destroy_node()
     rclpy.shutdown()
 
 
