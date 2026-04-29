@@ -46,6 +46,7 @@ class ScanHandler:
         self.scatter_integral_scan = None
         self.control_angle_arrow = None
 
+        self.t0 = self.node.get_clock().now().nanoseconds / 1e9
         self.last_scan = None
         self.last_integral_scan = None
         self.last_control_angle = None
@@ -54,7 +55,7 @@ class ScanHandler:
             self.debug_lidar_stream = self.node.create_timer(0.1, self.dummy_lidar_callback)
 
     def dummy_lidar_callback(self):
-        now = self.node.get_clock().now().nanoseconds / 1e9
+        now = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
         self.control_angle = -np.pi/12 + 0.1 * np.sin(now)
         scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
         with open(scan_path, 'r') as f:
@@ -71,21 +72,21 @@ class ScanHandler:
         pts = np.linspace(np.pi, -np.pi, len(msg.ranges))
         self.scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
-        self.last_scan = self.node.get_clock().now().nanoseconds / 1e9
+        self.last_scan = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
 
     def integral_scan_callback(self, msg):
         pts = np.linspace(np.pi, -np.pi, len(msg.ranges))
         self.integral_scan_x = [np.sin(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.integral_scan_y = [np.cos(pts[i]) * msg.ranges[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
         self.integral_scan_int = [msg.intensities[i] for i in range(len(msg.ranges)) if np.isfinite(msg.ranges[i])]
-        self.last_integral_scan = self.node.get_clock().now().nanoseconds / 1e9
+        self.last_integral_scan = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
 
     def control_angle_callback(self, msg):
         self.control_angle = np.deg2rad(msg.data)
-        self.last_control_angle = self.node.get_clock().now().nanoseconds / 1e9
+        self.last_control_angle = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
 
     def update_scan_plot(self):
-        now = self.node.get_clock().now().nanoseconds / 1e9
+        now = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
         if self.scan_x:
             if self.scatter_scan is None:
                 self.scatter_scan = self.ax_scan.scatter(self.scan_x, self.scan_y, c='r', s=2)

@@ -35,13 +35,14 @@ class ImuHandler:
         self.ax_z.set_title("IMU Z Acceleration")
         self.line_x, self.line_y, self.line_z = None, None, None
 
+        self.t0 = self.node.get_clock().now().nanoseconds / 1e9
         self.last_imu = None
 
         if debug:
             self.debug_imu_stream = self.node.create_timer(0.01, self.dummy_imu_callback)
 
     def dummy_imu_callback(self):
-        time = self.node.get_clock().now().nanoseconds / 1e9
+        time = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
         self.imu_time_buffer.append(time)
         self.imu_x_buffer.append(np.sin(time*10))
         self.imu_y_buffer.append(np.cos(time*10))
@@ -55,7 +56,7 @@ class ImuHandler:
         self.last_imu = time
 
     def imu_callback(self, msg):
-        time = self.node.get_clock().now().nanoseconds / 1e9
+        time = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
         self.imu_time_buffer.append(time)
         self.imu_x_buffer.append(msg.x)
         self.imu_y_buffer.append(msg.y)
@@ -69,7 +70,7 @@ class ImuHandler:
         self.last_imu = time
 
     def update_imu_plot(self):
-        now = self.node.get_clock().now().nanoseconds / 1e9
+        now = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
         if self.imu_time_buffer:
             if self.line_x is None:
                 self.line_x, = self.ax_x.plot(self.imu_time_buffer, self.imu_x_buffer, c='g')
