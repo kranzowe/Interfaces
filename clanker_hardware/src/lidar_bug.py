@@ -6,6 +6,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32
+from geometry_msgs.msg import Vector3
 
 from threading import Thread, Lock
 
@@ -45,6 +46,7 @@ class LidarBugNode(Node):
 
         #subscribe to the scan data
         self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
+        self.create_subscription(Vector3, "/imu/gyro", self.gyro_cb, 10)
 
 
         #initialize the velocity publisher
@@ -96,6 +98,9 @@ class LidarBugNode(Node):
         self.create_timer(0.1, self.pub_cb)
 
         self.create_timer(1, self.update_param)
+
+    def gyro_cb(self, msg):
+        self.instant_angular_rate = np.rad2deg(msg.z)
 
     def scan_cb(self, msg):
 
