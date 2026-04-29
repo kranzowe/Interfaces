@@ -69,7 +69,7 @@ class LidarBugNode(Node):
         self.declare_parameter("steer_b0", 90.0)
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 21)
-        self.declare_parameter("distribution_bias", .6)
+        self.declare_parameter("distribution_bias", .5)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
         self.neutral_speed = self.get_parameter("neutral_speed").value
@@ -174,8 +174,8 @@ class LidarBugNode(Node):
             trim_1_integral[:half_part] = trim_1_integral[half_part:]
             trim_1_integral[half_part:] = half_scan
             half_dilation = self.dilated_points[:half_part].copy()
-            self.dilated_points[half_part:] = self.dilated_points[:half_part]
-            self.dilated_points[:half_part] = half_dilation
+            self.dilated_points[:half_part] = self.dilated_points[half_part:]
+            self.dilated_points[half_part:] = half_dilation
         msg.ranges = list(trim_1_integral / self.integration_range)
         msg.intensities = list(self.dilated_points)
 
