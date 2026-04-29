@@ -89,6 +89,8 @@ class LidarBugNode(Node):
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
+        self.instant_angular_rate = 0
+
 
         #start a timer to handle consistent message pub
         self.create_timer(0.1, self.pub_cb)
