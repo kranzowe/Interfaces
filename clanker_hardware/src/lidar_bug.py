@@ -100,7 +100,7 @@ class LidarBugNode(Node):
         self.create_timer(1, self.update_param)
 
     def gyro_cb(self, msg):
-        self.instant_angular_rate = np.rad2deg(msg.z)
+        self.instant_angular_rate = -np.rad2deg(msg.z)
 
     def scan_cb(self, msg):
 
