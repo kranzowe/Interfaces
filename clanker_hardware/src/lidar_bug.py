@@ -73,6 +73,7 @@ class LidarBugNode(Node):
         self.declare_parameter("steer_b0", 50.0)
         self.declare_parameter("range_threshold", 0.5)
         self.declare_parameter("noise_threshold", 31)
+        self.declare_parameter("filter_strength", 0.1)
         self.declare_parameter("distribution_bias", .5)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
@@ -89,12 +90,12 @@ class LidarBugNode(Node):
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
+        self.filter_strength = self.get_parameter("filter_strength").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
 
-        self.butter_filter = signal.butter(2, 5, btype='low', analog=False, output='sos')
 
         self.instant_angular_rate = 0
 
@@ -307,6 +308,11 @@ class LidarBugNode(Node):
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.distribution_bias = self.get_parameter("distribution_bias").value
         self.neutral_speed = self.get_parameter("neutral_speed").value
+        self.filter_strength = self.get_parameter("filter_strength").value
+
+        self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
+
+
 
         
 
