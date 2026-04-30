@@ -94,7 +94,7 @@ class LidarBugNode(Node):
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
 
-        self.butter_filter = signal.butter(2, 0.2, btype='low', analog=False, output='sos')
+        self.butter_filter = signal.butter(2, 5, btype='low', analog=False, output='sos')
 
         self.instant_angular_rate = 0
 
@@ -114,18 +114,15 @@ class LidarBugNode(Node):
 
         scan_ranges = np.array(msg.ranges)
 
-        filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
-
-
         if self.reverse_driving:
             # Shift 180
-            half_part = int(filtered_ranges.size/2)
-            half_scan = filtered_ranges[:half_part].copy()
-            filtered_ranges[:half_part] = filtered_ranges[half_part:]
-            filtered_ranges[half_part:] = half_scan
+            half_part = int(scan_ranges.size/2)
+            half_scan = scan_ranges[:half_part].copy()
+            scan_ranges[:half_part] = scan_ranges[half_part:]
+            scan_ranges[half_part:] = half_scan
 
         found_first_valid = False
-        for idx, meas_range in enumerate(filtered_ranges):
+        for idx, meas_range in enumerate(scan_ranges):
             if(isinf(meas_range) and found_first_valid):
 
                 gap_end_found = False
@@ -134,20 +131,23 @@ class LidarBugNode(Node):
                 while(not gap_end_found):
                     inner_idx = (counter + idx) % self.lidar_resolution
 
-                    if not (isinf(filtered_ranges[inner_idx])):
+                    if not (isinf(scan_ranges[inner_idx])):
                         gap_end_found = True
-                        gap_end_val = filtered_ranges[inner_idx]
+                        gap_end_val = scan_ranges[inner_idx]
 
                     counter += 1
 
-                increment = (gap_end_val - filtered_ranges[idx - 1]) / counter
+                increment = (gap_end_val - scan_ranges[idx - 1]) / counter
 
                 for idx2 in range(0, counter):
                     
-                    filtered_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + filtered_ranges[idx - 1]
+                    scan_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + scan_ranges[idx - 1]
 
             elif(not isinf(meas_range)):
                 found_first_valid = True
+
+
+        filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
 
 
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
