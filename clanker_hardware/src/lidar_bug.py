@@ -320,14 +320,6 @@ class LidarBugNode(Node):
         #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
 
 
-
-        
-
-
-
-
-
-
 def main(args=None):
     rclpy.init(args=args)
 
