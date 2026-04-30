@@ -260,6 +260,12 @@ class LidarBugNode(Node):
 
             self.dilated_points[(idx - floor((self.noise_threshold + 4) / 2)):(idx +floor((self.noise_threshold + 4) / 2) + 1)] += noise_free_points[idx] * np.ones(self.noise_threshold + 4)
 
+        # Only filter out noise above threshold, not below threshold.
+        # Apparent noise below a threshold could be an obstacle.
+        self.dilated_points = (
+            (self.dilated_points > 0.0) & (threshold_points > 0.0)
+        ).astype(float)
+
         middle_ind = 0 
         largest_middle_ind = 0
         for idx in range(1, self.lidar_resolution + 1):
