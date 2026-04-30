@@ -9,7 +9,7 @@ def generate_launch_description():
             name="reverse_lidar_bug",
             parameters=[{
                 "reverse_driving": True,
-                "neutral_steer": 1410.0,
+                "neutral_steer": 1400.0,
             }],
         ),
     ])
