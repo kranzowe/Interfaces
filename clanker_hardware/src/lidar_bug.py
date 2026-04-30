@@ -95,7 +95,8 @@ class LidarBugNode(Node):
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
-
+        self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
+        
 
         self.instant_angular_rate = 0
 
