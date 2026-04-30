@@ -6,11 +6,14 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32
+from geometry_msgs.msg import Vector3
 
 from threading import Thread, Lock
 
 from math import floor, isinf, pi
 import numpy as np
+
+from scipy import signal
 
 MIN_SPEED = .2
 MAX_SPEED = 1.0
@@ -21,7 +24,7 @@ INCREMENT_TURN = 0.2
 
 STALE_TIME = 0.25
 
-class WASDNode(Node):
+class LidarBugNode(Node):
 
     direction = 0
     speed = MIN_SPEED
@@ -41,10 +44,11 @@ class WASDNode(Node):
     current_time = 0
 
     def __init__(self):
-        super().__init__("wasd_node")
+        super().__init__("lb_node")
 
         #subscribe to the scan data
         self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
+        self.create_subscription(Vector3, "/imu/gyro", self.gyro_cb, 10)
 
 
         #initialize the velocity publisher
@@ -53,23 +57,27 @@ class WASDNode(Node):
         self.optimal_angle_pub = self.create_publisher(Float32, "optimal_angle", 10)
 
         #declare parameters
-        self.declare_parameter("ol_speed", 1500.0)
+        self.declare_parameter("reverse_driving", False)
+        self.declare_parameter("neutral_speed", 1500.0)
+        self.declare_parameter("ol_speed", 0.0)
         self.declare_parameter("tune_mode", True)
         self.declare_parameter("pwm_mode", True)
         self.declare_parameter("neutral_steer", 1470.0)
         self.declare_parameter("lidar_res", 720)
         self.declare_parameter("integration_range", 16) #units are degrees
         self.declare_parameter("exclusion_width", 150)
-        self.declare_parameter("steer_p", 25.0)
+        self.declare_parameter("steer_p", 35.0)
         self.declare_parameter("steer_lambda", 0.15)
-        self.declare_parameter("steer_phi", 3.0)
+        self.declare_parameter("steer_phi", 0.3)
         self.declare_parameter("steer_b", 0.1)
-        self.declare_parameter("steer_b0", 90.0)
-        self.declare_parameter("nuetral_steer", 3)
+        self.declare_parameter("steer_b0", 50.0)
         self.declare_parameter("range_threshold", 0.5)
-        self.declare_parameter("noise_threshold", 21)
-        self.declare_parameter("distribution_bias", .6)
+        self.declare_parameter("noise_threshold", 31)
+        self.declare_parameter("filter_strength", 0.1)
+        self.declare_parameter("distribution_bias", .5)
         
+        self.reverse_driving = self.get_parameter("reverse_driving").value
+        self.neutral_speed = self.get_parameter("neutral_speed").value
         self.neutral_steer = self.get_parameter("neutral_steer").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
@@ -82,9 +90,15 @@ class WASDNode(Node):
         self.steer_b0 = self.get_parameter("steer_b0").value
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
+        self.filter_strength = self.get_parameter("filter_strength").value
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
+
+        #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
+        
+
+        self.instant_angular_rate = 0
 
 
         #start a timer to handle consistent message pub
@@ -92,12 +106,22 @@ class WASDNode(Node):
 
         self.create_timer(1, self.update_param)
 
+    def gyro_cb(self, msg):
+        self.instant_angular_rate = -np.rad2deg(msg.z)
+
     def scan_cb(self, msg):
 
         self.current_time = self.get_ros_time_as_double()
 
 
         scan_ranges = np.array(msg.ranges)
+
+        if self.reverse_driving:
+            # Shift 180
+            half_part = int(scan_ranges.size/2)
+            half_scan = scan_ranges[:half_part].copy()
+            scan_ranges[:half_part] = scan_ranges[half_part:]
+            scan_ranges[half_part:] = half_scan
 
         found_first_valid = False
         for idx, meas_range in enumerate(scan_ranges):
@@ -125,17 +149,21 @@ class WASDNode(Node):
                 found_first_valid = True
 
 
+        #filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
+
+
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
             width_integral[i:i+self.lidar_resolution] += scan_ranges
         
-        trim_1_integral = width_integral[:self.lidar_resolution]
-        trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
+        trim_1_integral = width_integral[int(self.integration_range/2):self.lidar_resolution+int(self.integration_range/2)]
+        # trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
 
         #trim the back out
-        trim_1_integral[:floor((self.exclusion_width + self.integration_range)/ 2)] = 0
-        trim_1_integral[floor(self.lidar_resolution - (self.exclusion_width - self.integration_range / 2)):] = 0
+        cut_width = floor(self.exclusion_width / 2)
+        trim_1_integral[:cut_width] = 0
+        trim_1_integral[self.lidar_resolution - cut_width:] = 0
 
         #get the optimal angle - v1
         #self.optimal_angle = (np.argmax(trim_1_integral) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
@@ -149,13 +177,24 @@ class WASDNode(Node):
         threshold_points[max_indicies] = 1.0
 
         #take the average of the threshold points
-        self.optimal_angle = (self.determine_optimal_angle(threshold_points) - self.integration_range / 2) / round(self.lidar_resolution / 360) - 180
-
+        self.optimal_angle = self.determine_optimal_angle(threshold_points) / round(self.lidar_resolution / 360) - 180
+        if self.reverse_driving:
+            self.optimal_angle = -self.optimal_angle
+        # self.get_logger().info(f"{self.optimal_angle}")
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
         msg.angle_max = pi - pi / self.lidar_resolution
         msg.angle_increment = 2 * pi / self.lidar_resolution
+        if self.reverse_driving:
+            # Shift 180
+            half_part = int(trim_1_integral.size/2)
+            half_scan = trim_1_integral[:half_part].copy()
+            trim_1_integral[:half_part] = trim_1_integral[half_part:]
+            trim_1_integral[half_part:] = half_scan
+            half_dilation = self.dilated_points[:half_part].copy()
+            self.dilated_points[:half_part] = self.dilated_points[half_part:]
+            self.dilated_points[half_part:] = half_dilation
         msg.ranges = list(trim_1_integral / self.integration_range)
         msg.intensities = list(self.dilated_points)
 
@@ -164,10 +203,13 @@ class WASDNode(Node):
 
         msg = Float32()
         msg.data = self.optimal_angle
+        if self.reverse_driving:
+            msg.data = (180 - self.optimal_angle)%360
         self.optimal_angle_pub.publish(msg)
 
-        if(self.previous_time == 0):
-            self.instant_angular_rate = (self.optimal_angle - self.previous_angle) / (self.current_time - self.previous_time)
+        # if(self.previous_time != 0):
+        #     self.instant_angular_rate = (self.optimal_angle - self.previous_angle) / (self.current_time - self.previous_time)
+        #     self.previous_angle = self.optimal_angle
 
 
         self.previous_time = self.current_time
@@ -186,7 +228,10 @@ class WASDNode(Node):
         beta_steer = self.steer_p * self.steer_lambda * abs(s) + self.steer_b * self.instant_angular_rate**2 + self.steer_b0
         control_input = -self.sign(s) * beta_steer - self.instant_angular_rate
 
-        msg.linear.x = self.ol_speed 
+        speed_term = -self.ol_speed
+        if self.reverse_driving:
+            speed_term = self.ol_speed
+        msg.linear.x = self.neutral_speed + speed_term
         msg.angular.z = self.neutral_steer + control_input
 
         if(msg.angular.z > 1990):
@@ -207,9 +252,6 @@ class WASDNode(Node):
             noise_free_points[(idx - floor(self.noise_threshold / 2)):(idx +floor(self.noise_threshold / 2) + 1)] += inverse_points[idx] * np.ones(self.noise_threshold)
 
         noise_free_points = np.ones(self.lidar_resolution) - np.minimum(noise_free_points, 1.0)
-
-        self.get_logger().info(f"{noise_free_points}")
-
 
         self.dilated_points = np.zeros(self.lidar_resolution)
 
@@ -245,10 +287,12 @@ class WASDNode(Node):
 
     def get_ros_time_as_double(self):
         #return the ros2 time as float
-        return self.get_clock().now().seconds_nanoseconds()[1] * 1e-9 + self.get_clock().now().seconds_nanoseconds()[0]
+        now = self.get_clock().now().seconds_nanoseconds()
+        return now[1] * 1e-9 + now[0]
     
     def update_param(self):
 
+        self.reverse_driving = self.get_parameter("reverse_driving").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.tune_mode = self.get_parameter("tune_mode").value
         self.pwm_mode = self.get_parameter("pwm_mode").value
@@ -264,6 +308,11 @@ class WASDNode(Node):
         self.range_threshold = self.get_parameter("range_threshold").value
         self.noise_threshold = self.get_parameter("noise_threshold").value
         self.distribution_bias = self.get_parameter("distribution_bias").value
+        self.neutral_speed = self.get_parameter("neutral_speed").value
+        self.filter_strength = self.get_parameter("filter_strength").value
+
+        #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
+
 
 
         
@@ -276,14 +325,14 @@ class WASDNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    wasd_node = WASDNode()
+    lb_node = LidarBugNode()
 
-    rclpy.spin(wasd_node)
+    rclpy.spin(lb_node)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    wasd_node.destroy_node()
+    lb_node.destroy_node()
     rclpy.shutdown()
 
 

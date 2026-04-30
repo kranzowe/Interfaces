@@ -24,5 +24,11 @@ def generate_launch_description():
             name="telemetry",
             parameters=[{}],
         ),
+        Node(
+            package="robo_rover",
+            executable="rover_node",
+            name="rover_node",
+            parameters=[{}],
+        ),
         rplidar_launch_action,
     ])
