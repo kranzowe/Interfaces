@@ -113,9 +113,7 @@ class LidarBugNode(Node):
     def gyro_cb(self, msg):
         self.instant_angular_rate = -np.rad2deg(msg.z) * self.steer_d
 
-        self.filtered_angular_rate = -np.rad2deg(msg.z) * (self.filter_strength) * self.steer_d + self.filtered_angular_rate * (1 - self.filter_strength) 
-
-        self.get_logger().info(f"{self.instant_angular_rate} fitler: {self.filtered_angular_rate}")
+        self.filtered_angular_rate = -np.rad2deg(msg.z) * (self.filter_strength) * self.steer_d + self.filtered_angular_rate * (1 - self.filter_strength)
 
     def scan_cb(self, msg):
 
@@ -188,7 +186,6 @@ class LidarBugNode(Node):
         self.optimal_angle = self.determine_optimal_angle(threshold_points) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
-        # self.get_logger().info(f"{self.optimal_angle}")
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
