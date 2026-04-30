@@ -13,6 +13,8 @@ from threading import Thread, Lock
 from math import floor, isinf, pi
 import numpy as np
 
+from scipy import signal
+
 MIN_SPEED = .2
 MAX_SPEED = 1.0
 INCREMENT_SPEED = 0.1
@@ -91,6 +93,9 @@ class LidarBugNode(Node):
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
+
+        self.butter_filter = signal.butter(2, 5, btype='low', analog=False, output='sos')
+
         self.instant_angular_rate = 0
 
 
@@ -108,15 +113,19 @@ class LidarBugNode(Node):
 
 
         scan_ranges = np.array(msg.ranges)
+
+        filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
+
+
         if self.reverse_driving:
             # Shift 180
-            half_part = int(scan_ranges.size/2)
-            half_scan = scan_ranges[:half_part].copy()
-            scan_ranges[:half_part] = scan_ranges[half_part:]
-            scan_ranges[half_part:] = half_scan
+            half_part = int(filtered_ranges.size/2)
+            half_scan = filtered_ranges[:half_part].copy()
+            filtered_ranges[:half_part] = filtered_ranges[half_part:]
+            filtered_ranges[half_part:] = half_scan
 
         found_first_valid = False
-        for idx, meas_range in enumerate(scan_ranges):
+        for idx, meas_range in enumerate(filtered_ranges):
             if(isinf(meas_range) and found_first_valid):
 
                 gap_end_found = False
@@ -125,17 +134,17 @@ class LidarBugNode(Node):
                 while(not gap_end_found):
                     inner_idx = (counter + idx) % self.lidar_resolution
 
-                    if not (isinf(scan_ranges[inner_idx])):
+                    if not (isinf(filtered_ranges[inner_idx])):
                         gap_end_found = True
-                        gap_end_val = scan_ranges[inner_idx]
+                        gap_end_val = filtered_ranges[inner_idx]
 
                     counter += 1
 
-                increment = (gap_end_val - scan_ranges[idx - 1]) / counter
+                increment = (gap_end_val - filtered_ranges[idx - 1]) / counter
 
                 for idx2 in range(0, counter):
                     
-                    scan_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + scan_ranges[idx - 1]
+                    filtered_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + filtered_ranges[idx - 1]
 
             elif(not isinf(meas_range)):
                 found_first_valid = True
@@ -144,7 +153,7 @@ class LidarBugNode(Node):
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
-            width_integral[i:i+self.lidar_resolution] += scan_ranges
+            width_integral[i:i+self.lidar_resolution] += filtered_ranges
         
         trim_1_integral = width_integral[int(self.integration_range/2):self.lidar_resolution+int(self.integration_range/2)]
         # trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
