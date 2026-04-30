@@ -76,7 +76,7 @@ class LidarBugNode(Node):
         self.declare_parameter("noise_threshold", 31)
         self.declare_parameter("filter_strength", 0.1)
         self.declare_parameter("distribution_bias", .5)
-        self.declare_parameter("steer_d", 0.01)
+        self.declare_parameter("steer_d", 0.003)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
         self.neutral_speed = self.get_parameter("neutral_speed").value
