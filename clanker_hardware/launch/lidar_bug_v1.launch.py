@@ -8,8 +8,9 @@ def generate_launch_description():
             executable="lidar_bug_v1.py",
             name="lidar_bug_v1",
             parameters=[{
+                "neutral_speed": 1500.0,
+                "ol_speed": 0.0,
                 "neutral_steer": 1470.0,
-                "ol_speed": 1500.0,
                 "steer_p": 5.0,
                 "steer_d": 0.3,
                 "steer_d_filter": 0.2,

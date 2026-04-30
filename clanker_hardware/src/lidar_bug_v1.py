@@ -14,7 +14,6 @@ import numpy as np
 class LidarBugV1Node(Node):
 
     node_name = "lidar_bug_v1"
-    ol_speed_default = 1500.0
     steer_sign_default = 1.0
 
     optimal_angle = 0.0
@@ -34,8 +33,10 @@ class LidarBugV1Node(Node):
         self.integral_scan_pub = self.create_publisher(LaserScan, "integral_scan", 10)
         self.optimal_angle_pub = self.create_publisher(Float32, "optimal_angle", 10)
 
-        # Throttle PWM — set to your rover's neutral/drive PWM value
-        self.declare_parameter("ol_speed", self.ol_speed_default)
+        # Speed offset from neutral — same as lidar_bug.py: linear.x = neutral_speed - ol_speed
+        # Set ol_speed=80 to move (same command as the original lidar_bug)
+        self.declare_parameter("neutral_speed", 1500.0)
+        self.declare_parameter("ol_speed", 0.0)
         # Tune neutral_steer until the rover goes straight with no gap error
         self.declare_parameter("neutral_steer", 1470.0)
         # Set steer_sign to -1.0 if the rover steers the wrong direction
@@ -75,6 +76,7 @@ class LidarBugV1Node(Node):
         self.create_timer(1.0, self.update_param)
 
     def _load_params(self):
+        self.neutral_speed = self.get_parameter("neutral_speed").value
         self.ol_speed = self.get_parameter("ol_speed").value
         self.neutral_steer = self.get_parameter("neutral_steer").value
         self.steer_sign = self.get_parameter("steer_sign").value
@@ -328,7 +330,7 @@ class LidarBugV1Node(Node):
         correction = float(np.clip(correction, -self.steer_max, self.steer_max))
 
         msg = Twist()
-        msg.linear.x = self.ol_speed
+        msg.linear.x = self.neutral_speed - self.ol_speed
         msg.angular.z = float(
             np.clip(self.neutral_steer + self.steer_sign * correction, 1010.0, 1990.0)
         )
