@@ -94,7 +94,7 @@ class LidarBugNode(Node):
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
 
-        self.butter_filter = signal.butter(2, 5, btype='low', analog=False, output='sos')
+        self.butter_filter = signal.butter(2, 0.2, btype='low', analog=False, output='sos')
 
         self.instant_angular_rate = 0
 
