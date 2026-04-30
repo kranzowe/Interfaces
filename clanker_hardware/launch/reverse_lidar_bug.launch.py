@@ -10,6 +10,7 @@ def generate_launch_description():
             parameters=[{
                 "reverse_driving": True,
                 "neutral_steer": 1400.0,
+                "steer_d": 0.01,
             }],
         ),
     ])
