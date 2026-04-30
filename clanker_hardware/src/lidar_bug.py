@@ -44,7 +44,7 @@ class LidarBugNode(Node):
     current_time = 0
 
     def __init__(self):
-        super().__init__("lb_node")
+        super().__init__("lidar_bug")
 
         #subscribe to the scan data
         self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)

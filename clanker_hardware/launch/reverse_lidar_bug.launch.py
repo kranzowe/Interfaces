@@ -6,7 +6,7 @@ def generate_launch_description():
         Node(
             package="clanker_hardware",
             executable="lidar_bug.py",
-            name="reverse_lidar_bug",
+            name="lidar_bug",
             parameters=[{
                 "reverse_driving": True,
                 "neutral_steer": 1400.0,
