@@ -8,6 +8,7 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32
 
 from threading import Thread, Lock
+from scipy import signal
 
 from math import floor, isinf, pi
 import numpy as np
@@ -92,6 +93,8 @@ class WASDNode(Node):
 
         self.create_timer(1, self.update_param)
 
+        self.butter_filter = signal.butter(2, 5, btype='low', analog=False, output='sos')
+
     def scan_cb(self, msg):
 
         self.current_time = self.get_ros_time_as_double()
@@ -99,8 +102,10 @@ class WASDNode(Node):
 
         scan_ranges = np.array(msg.ranges)
 
+        filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
+
         found_first_valid = False
-        for idx, meas_range in enumerate(scan_ranges):
+        for idx, meas_range in enumerate(filtered_ranges):
             if(isinf(meas_range) and found_first_valid):
 
                 gap_end_found = False
@@ -109,17 +114,17 @@ class WASDNode(Node):
                 while(not gap_end_found):
                     inner_idx = (counter + idx) % self.lidar_resolution
 
-                    if not (isinf(scan_ranges[inner_idx])):
+                    if not (isinf(filtered_ranges[inner_idx])):
                         gap_end_found = True
-                        gap_end_val = scan_ranges[inner_idx]
+                        gap_end_val = filtered_ranges[inner_idx]
 
                     counter += 1
 
-                increment = (gap_end_val - scan_ranges[idx - 1]) / counter
+                increment = (gap_end_val - filtered_ranges[idx - 1]) / counter
 
                 for idx2 in range(0, counter):
                     
-                    scan_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + scan_ranges[idx - 1]
+                    filtered_ranges[(idx + idx2) % self.lidar_resolution] = idx2 * increment + filtered_ranges[idx - 1]
 
             elif(not isinf(meas_range)):
                 found_first_valid = True
@@ -128,7 +133,7 @@ class WASDNode(Node):
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
-            width_integral[i:i+self.lidar_resolution] += scan_ranges
+            width_integral[i:i+self.lidar_resolution] += filtered_ranges
         
         trim_1_integral = width_integral[:self.lidar_resolution]
         trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
@@ -234,6 +239,8 @@ class WASDNode(Node):
 
         return largest_middle_ind
             
+
+    def simple
 
 
     def sign(self, val):
