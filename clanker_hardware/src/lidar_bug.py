@@ -95,7 +95,7 @@ class LidarBugNode(Node):
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
 
-        self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
+        #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
         
 
         self.instant_angular_rate = 0
@@ -149,13 +149,13 @@ class LidarBugNode(Node):
                 found_first_valid = True
 
 
-        filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
+        #filtered_ranges  = signal.sosfiltfilt(self.butter_filter, scan_ranges)
 
 
         width_integral = np.zeros((self.lidar_resolution + self.integration_range))
 
         for i in range(self.integration_range):
-            width_integral[i:i+self.lidar_resolution] += filtered_ranges
+            width_integral[i:i+self.lidar_resolution] += scan_ranges
         
         trim_1_integral = width_integral[int(self.integration_range/2):self.lidar_resolution+int(self.integration_range/2)]
         # trim_1_integral[:self.integration_range] = width_integral[self.lidar_resolution:]
@@ -311,7 +311,7 @@ class LidarBugNode(Node):
         self.neutral_speed = self.get_parameter("neutral_speed").value
         self.filter_strength = self.get_parameter("filter_strength").value
 
-        self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
+        #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
 
 
 
