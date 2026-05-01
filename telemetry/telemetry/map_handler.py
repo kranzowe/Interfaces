@@ -21,7 +21,7 @@ class MapHandler:
         self.node = node
 
         self.pose_sub = self.node.create_subscription(
-            PoseWithCovarianceStamped, '/amcl/pose', self.pose_callback, qos_profile_sensor_data)
+            PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, qos_profile_sensor_data)
         
         self.map_fig = Figure(layout="constrained")
         plt.style.use('dark_background')
