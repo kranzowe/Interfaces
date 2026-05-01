@@ -41,7 +41,7 @@ class MapHandler:
         self.ax_map.set_title("Map")
         self.ax_map.imshow(self.image_array, cmap='gray')
 
-        self.node.declare_parameter("map.waypoint_csv", 'data/ohmy_big_path.csv')
+        self.node.declare_parameter("map.waypoint_csv", 'data/ohmy_big_path_SMOOTH.csv')
         waypoints_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.waypoint_csv").value)
         self.waypoints = np.genfromtxt(waypoints_path, delimiter=',', skip_header=1)
         world_waypoints_x, world_waypoints_y = self.world_pose_to_img_pose(self.waypoints[:,0], self.waypoints[:,1])
