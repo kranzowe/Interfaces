@@ -29,17 +29,27 @@ class MapHandler:
         self.ax_map.set_axis_off()
         self.scatter_pose = None
 
-        map_config_path = os.path.join(get_package_share_directory('telemetry'), 'data/oh_my.yaml')
+        self.node.declare_parameter("map.yaml", 'data/oh_my.yaml')
+        map_config_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.yaml").value)
         with open(map_config_path, "r") as f:
             self.map_config = yaml.safe_load(f)
 
-        map_path = os.path.join(get_package_share_directory('telemetry'), 'data/oh_my.pgm')
+        self.node.declare_parameter("map.img", 'data/oh_my.pgm')
+        map_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.img").value)
         img = Image.open(map_path)
         self.image_array = np.flipud(np.array(img))
         self.ax_map.set_title("Map")
         self.ax_map.imshow(self.image_array, cmap='gray')
 
+        self.node.declare_parameter("map.waypoint_csv", 'data/ohmy_big_path.csv')
+        waypoints_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.waypoint_csv").value)
+        self.waypoints = np.genfromtxt(waypoints_path, delimiter=',', skip_header=1)
+        world_waypoints_x, world_waypoints_y = self.world_pose_to_img_pose(self.waypoints[:,0], self.waypoints[:,1])
+        self.ax_map.plot(world_waypoints_x, world_waypoints_y, c='r', zorder=1)
+
         self.t0 = self.node.get_clock().now().nanoseconds / 1e9
+        self.pose_x = None
+        self.pose_y = None
         self.last_pose = None
 
         self.node.declare_parameter("map.window_size", 10.0)
@@ -63,21 +73,22 @@ class MapHandler:
         self.pose_y = msg.pose.pose.position.y
         self.last_pose = time
 
-    def world_pose_to_img_pose(self):
-        if self.last_pose is None:
+    def world_pose_to_img_pose(self, x, y):
+        if x is None or y is None:
             return None, None
-        map_x = (self.pose_x - self.map_config["origin"][0]) / self.map_config["resolution"]
-        map_y = (self.pose_y - self.map_config["origin"][1]) / self.map_config["resolution"]
+        map_x = (x - self.map_config["origin"][0]) / self.map_config["resolution"]
+        map_y = (y - self.map_config["origin"][1]) / self.map_config["resolution"]
         return (map_x, map_y)
 
     def update_map_plot(self):
         now = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
-        map_x, map_y = self.world_pose_to_img_pose()
+
+        map_x, map_y = self.world_pose_to_img_pose(self.pose_x, self.pose_y)
         if map_x is None:
             self.ax_map.set_xlim([0,self.image_array.shape[1]])
             self.ax_map.set_ylim([0,self.image_array.shape[0]])
         elif self.scatter_pose is None:
-            self.scatter_pose = self.ax_map.scatter([map_x], [map_y], c='g')
+            self.scatter_pose = self.ax_map.scatter([map_x], [map_y], c='b', s=50, zorder=2)
             self.ax_map.set_xlim([map_x-self.window_size,map_x+self.window_size])
             self.ax_map.set_ylim([map_y-self.window_size,map_y+self.window_size])
         elif now - self.last_pose < self.node.gc_rate:
