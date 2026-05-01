@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""
-Obstacle-avoidance node for the wheeled rover using 2D planar LaserScan.
-
-Extends LidarBugNode (gap-following course navigation) with a reactive
-polar-sector gap-finder that detects obstacles in the forward FOV and
-temporarily overrides steering to navigate around them.
-
-Why this differs from the quadruped 3D-lidar version:
-  - Input is a 2D LaserScan (ranges only), not a 3D elevation / height map,
-    so height and slope detection are not available.  An obstacle is simply
-    anything whose range is below a threshold.
-  - The rover uses Ackermann steering — no holonomic strafe (vy).
-  - Output is a PWM servo delta, not a yaw setpoint fed to a legged gait.
-"""
 
 import time
 import math
@@ -26,14 +12,16 @@ from lidar_bug import LidarBugNode          # reuse all scan pre-processing
 # ── Tuning constants ─────────────────────────────────────────────────────────
 FORWARD_FOV_DEG   = 60.0   # half-angle of the forward cone inspected (±60° = 120° total)
 CENTRE_HALF_DEG   = 20.0   # inner corridor used for the danger / clear-exit checks
-DANGER_DIST_M     = 0.8    # enter avoidance when closest reading in centre < this (m)
-CLEAR_DIST_M      = 1.2    # exit avoidance once centre corridor clears beyond this (m)
-OBS_DIST_M        = 1.0    # a sector is "blocked" when its minimum range < this (m)
+DANGER_DIST_M     = 5.0    # enter avoidance when closest reading in centre < this (m)
+CLEAR_DIST_M      = 6.0    # exit avoidance once centre corridor clears beyond this (m); must be > DANGER_DIST_M to prevent re-entry oscillation
+OBS_DIST_M        = 4.0    # forward obstacle distance: centre sectors blocked when reading < this (m)
+ROVER_WIDTH_M     = 0.25   # physical rover width (m) — sets lateral clearance per side
+LATERAL_MARGIN_M  = 0.02   # safety buffer added to rover half-width per side (m); keeps gaps > 30 cm passable
 POLAR_SECTORS     = 21     # number of angular slices across the ±FOV cone
 MIN_GAP_DEG       = 12.0   # gap must span at least this many degrees to be viable
 STEER_GAIN        = 12.0   # PWM units per degree of gap-centre angle
 AVOID_SPEED_SCALE = 0.55   # fraction of normal ol_speed applied during avoidance
-AVOID_TIMEOUT_S   = 5.0    # hard exit from avoidance even if obstacle still present
+AVOID_TIMEOUT_S   = 5.0   # hard exit from avoidance even if obstacle still present
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -103,11 +91,19 @@ class LidarObsAvoidNode(LidarBugNode):
         sector_width = edges[1] - edges[0]
 
         blocked = np.zeros(POLAR_SECTORS, dtype=bool)
+        lateral_needed = ROVER_WIDTH_M / 2.0 + LATERAL_MARGIN_M
         for s in range(POLAR_SECTORS):
             in_sector = (fov_angles >= edges[s]) & (fov_angles < edges[s + 1])
             sector_r  = fov_ranges[in_sector]
             finite_r  = sector_r[np.isfinite(sector_r)]
-            if finite_r.size > 0 and float(np.min(finite_r)) < OBS_DIST_M:
+            if finite_r.size == 0:
+                continue
+            ang_rad   = math.radians(abs(centers[s]))
+            # Forward sectors use OBS_DIST_M for early warning.
+            # Side sectors use lateral clearance geometry: a gap is passable if
+            # the rover fits, i.e. range > lateral_needed / sin(angle).
+            threshold = OBS_DIST_M if ang_rad < 0.05 else min(OBS_DIST_M, lateral_needed / math.sin(ang_rad))
+            if float(np.min(finite_r)) < threshold:
                 blocked[s] = True
 
         # ── Step 3: Find all gaps ─────────────────────────────────────────────
@@ -125,9 +121,16 @@ class LidarObsAvoidNode(LidarBugNode):
                 i += 1
 
         # ── Step 4: Select the best gap ───────────────────────────────────────
+        timed_out = (time.monotonic() - self._avoid_started) > AVOID_TIMEOUT_S
+
         if not gaps:
             # The full forward FOV is blocked — hold the last chosen side and
             # apply a small fixed steer nudge (no strafe available on a rover).
+            if timed_out:
+                self._avoid_active = False
+                self._avoid_side   = 0
+                self._avoid_steer  = 0.0
+                return
             side = self._avoid_side if self._avoid_side != 0 else 1
             self._enter_avoid(side)
             self._avoid_steer = side * STEER_GAIN * 15.0   # gentle nudge (≈15°)
@@ -149,7 +152,6 @@ class LidarObsAvoidNode(LidarBugNode):
         # Leave avoidance mode once the centre corridor is genuinely clear
         # (hysteresis: CLEAR_DIST_M > DANGER_DIST_M prevents rapid toggling)
         # or after a hard timeout so we never get stuck in avoidance forever.
-        timed_out = (time.monotonic() - self._avoid_started) > AVOID_TIMEOUT_S
         if min_centre > CLEAR_DIST_M or timed_out:
             self._avoid_active = False
             self._avoid_side   = 0
