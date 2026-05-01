@@ -29,8 +29,8 @@ class TelemetryNode(Node):
         self.app.add_url_rule('/', view_func=self.update_vis)
 
         self.flask_thread = threading.Thread(target=self.run_flask)
-        self.flask_thread.daemon = True
-        self.flask_thread.start()
+        # self.flask_thread.daemon = True
+        # self.flask_thread.start()
 
         self.declare_parameter("refresh_rate", 0.5)
         self.declare_parameter("gc_rate", 4.0)
