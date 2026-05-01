@@ -116,7 +116,7 @@ class MapHandler:
         if map_pursue_x is None:
             pass
         elif self.plot_target is None:
-            self.plot_target = self.ax_map.plot([map_x, map_pursue_x], [map_y, map_pursue_y], c='g', zorder=2)
+            self.plot_target, = self.ax_map.plot([map_x, map_pursue_x], [map_y, map_pursue_y], c='g', zorder=2)
         elif now - self.last_target < self.node.gc_rate:
             self.plot_target.set_data([map_x, map_pursue_x], [map_y, map_pursue_y])
         else:
