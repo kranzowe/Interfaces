@@ -32,19 +32,19 @@ class MapHandler:
         self.scatter_pose = None
         self.plot_target = None
 
-        self.node.declare_parameter("map.yaml", 'data/oh_my.yaml')
+        self.node.declare_parameter("map.yaml", 'data/CURRENT_MAP.yaml')
         map_config_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.yaml").value)
         with open(map_config_path, "r") as f:
             self.map_config = yaml.safe_load(f)
 
-        self.node.declare_parameter("map.img", 'data/oh_my.pgm')
+        self.node.declare_parameter("map.img", 'data/CURRENT_MAP.pgm')
         map_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.img").value)
         img = Image.open(map_path)
         self.image_array = np.flipud(np.array(img))
         self.ax_map.set_title("Map")
         self.ax_map.imshow(self.image_array, cmap='gray')
 
-        self.node.declare_parameter("map.waypoint_csv", 'data/ohmy_big_path_SMOOTH.csv')
+        self.node.declare_parameter("map.waypoint_csv", 'data/CURRENT_PATH.csv')
         waypoints_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.waypoint_csv").value)
         self.waypoints = np.genfromtxt(waypoints_path, delimiter=',', skip_header=1)
         world_waypoints_x, world_waypoints_y = self.world_pose_to_img_pose(self.waypoints[:,0], self.waypoints[:,1])
