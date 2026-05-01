@@ -150,7 +150,7 @@ class LidarBugNode(Node):
 
                 incremented_point = increment * v_unit + segment_start
                  
-                is_in_lookahead = (np.linalg.norm(self.pos - incremented_point) < self.pp_lookahead_distances) 
+                is_in_lookahead = (np.linalg.norm(self.pos - incremented_point) < self.pp_lookahead_distance) 
 
                 if(currently_inside_lookahead is None):
                     currently_inside_lookahead = is_in_lookahead
