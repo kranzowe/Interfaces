@@ -56,17 +56,18 @@ class ScanHandler:
 
     def dummy_lidar_callback(self):
         now = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
-        self.control_angle = -np.pi/12 + 0.1 * np.sin(now)
-        scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
-        with open(scan_path, 'r') as f:
-            lidar_scan_load = json.load(f)
-            dummy_scan = LaserScan()
-            dummy_scan.ranges = [float(r) if r is not None else float('inf') for r in lidar_scan_load['ranges']]
-            dummy_scan.intensities = [float(r) if r is not None else float('inf') for r in lidar_scan_load['intensities']]
-        self.integral_scan_callback(dummy_scan)
-        self.last_scan = now
-        self.last_integral_scan = now
-        self.last_control_angle = now
+        if now % 40 > 15:
+            self.control_angle = -np.pi/12 + 0.1 * np.sin(now)
+            scan_path = os.path.join(get_package_share_directory('telemetry'), 'data/laserscan.json')
+            with open(scan_path, 'r') as f:
+                lidar_scan_load = json.load(f)
+                dummy_scan = LaserScan()
+                dummy_scan.ranges = [float(r) if r is not None else float('inf') for r in lidar_scan_load['ranges']]
+                dummy_scan.intensities = [float(r) if r is not None else float('inf') for r in lidar_scan_load['intensities']]
+            self.integral_scan_callback(dummy_scan)
+            self.last_scan = now
+            self.last_integral_scan = now
+            self.last_control_angle = now
 
     def scan_callback(self, msg):
         pts = np.linspace(np.pi, -np.pi, len(msg.ranges))

@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
@@ -44,11 +45,11 @@ class LidarBugNode(Node):
     current_time = 0
 
     def __init__(self):
-        super().__init__("lb_node")
+        super().__init__("lidar_bug")
 
         #subscribe to the scan data
         self.create_subscription(LaserScan, "/scan", self.scan_cb, 10)
-        self.create_subscription(Vector3, "/imu/gyro", self.gyro_cb, 10)
+        self.create_subscription(Vector3, "/imu/gyro", self.gyro_cb, qos_profile_sensor_data)
 
 
         #initialize the velocity publisher
@@ -75,6 +76,7 @@ class LidarBugNode(Node):
         self.declare_parameter("noise_threshold", 31)
         self.declare_parameter("filter_strength", 0.1)
         self.declare_parameter("distribution_bias", .5)
+        self.declare_parameter("steer_d", 0.003)
         
         self.reverse_driving = self.get_parameter("reverse_driving").value
         self.neutral_speed = self.get_parameter("neutral_speed").value
@@ -94,11 +96,13 @@ class LidarBugNode(Node):
         self.integration_range = floor(self.get_parameter("integration_range").value / 360 * self.lidar_resolution)
         self.exclusion_width = floor(self.get_parameter("exclusion_width").value / 360 * self.lidar_resolution)
         self.distribution_bias = self.get_parameter("distribution_bias").value
+        self.steer_d = self.get_parameter("steer_d").value
 
         #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
         
 
         self.instant_angular_rate = 0
+        self.filtered_angular_rate = 0
 
 
         #start a timer to handle consistent message pub
@@ -107,7 +111,9 @@ class LidarBugNode(Node):
         self.create_timer(1, self.update_param)
 
     def gyro_cb(self, msg):
-        self.instant_angular_rate = -np.rad2deg(msg.z)
+        self.instant_angular_rate = -np.rad2deg(msg.z) * self.steer_d
+
+        self.filtered_angular_rate = -np.rad2deg(msg.z) * (self.filter_strength) * self.steer_d + self.filtered_angular_rate * (1 - self.filter_strength)
 
     def scan_cb(self, msg):
 
@@ -180,7 +186,6 @@ class LidarBugNode(Node):
         self.optimal_angle = self.determine_optimal_angle(threshold_points) / round(self.lidar_resolution / 360) - 180
         if self.reverse_driving:
             self.optimal_angle = -self.optimal_angle
-        # self.get_logger().info(f"{self.optimal_angle}")
 
         msg = LaserScan()
         msg.angle_min = -pi + pi / self.lidar_resolution
@@ -260,6 +265,12 @@ class LidarBugNode(Node):
 
             self.dilated_points[(idx - floor((self.noise_threshold + 4) / 2)):(idx +floor((self.noise_threshold + 4) / 2) + 1)] += noise_free_points[idx] * np.ones(self.noise_threshold + 4)
 
+        # Only filter out noise above threshold, not below threshold.
+        # Apparent noise below a threshold could be an obstacle.
+        self.dilated_points = (
+            (self.dilated_points > 0.0) & (threshold_points > 0.0)
+        ).astype(float)
+
         middle_ind = 0 
         largest_middle_ind = 0
         for idx in range(1, self.lidar_resolution + 1):
@@ -310,16 +321,10 @@ class LidarBugNode(Node):
         self.distribution_bias = self.get_parameter("distribution_bias").value
         self.neutral_speed = self.get_parameter("neutral_speed").value
         self.filter_strength = self.get_parameter("filter_strength").value
+        self.steer_d = self.get_parameter("steer_d").value
+
 
         #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
-
-
-
-        
-
-
-
-
 
 
 def main(args=None):

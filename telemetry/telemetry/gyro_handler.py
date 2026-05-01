@@ -15,7 +15,7 @@ import json
 from rclpy.qos import qos_profile_sensor_data
 from ament_index_python import get_package_share_directory
 
-class ImuHandler:
+class GyroHandler:
     def __init__(self, node, debug):
         self.node = node
 
@@ -25,14 +25,14 @@ class ImuHandler:
         self.imu_y_buffer = []
         self.imu_z_buffer = []
         self.imu_sub = self.node.create_subscription(
-            Vector3, '/imu/accel', self.imu_callback, qos_profile_sensor_data)
+            Vector3, '/imu/gyro', self.imu_callback, qos_profile_sensor_data)
         
         self.imu_fig = Figure(layout="constrained")
         plt.style.use('dark_background')
         self.ax_x, self.ax_y, self.ax_z = self.imu_fig.subplots(3,1)
-        self.ax_x.set_title("IMU X Acceleration")
-        self.ax_y.set_title("IMU Y Acceleration")
-        self.ax_z.set_title("IMU Z Acceleration")
+        self.ax_x.set_title("Gyro X Angular Velocity")
+        self.ax_y.set_title("Gyro Y Angular Velocity")
+        self.ax_z.set_title("Gyro Z Angular Velocity")
         self.line_x, self.line_y, self.line_z = None, None, None
 
         self.t0 = self.node.get_clock().now().nanoseconds / 1e9
@@ -43,17 +43,18 @@ class ImuHandler:
 
     def dummy_imu_callback(self):
         time = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
-        self.imu_time_buffer.append(time)
-        self.imu_x_buffer.append(np.sin(time*10))
-        self.imu_y_buffer.append(np.cos(time*10))
-        self.imu_z_buffer.append(-9.8)
-        while (self.imu_time_buffer[-1] - self.imu_time_buffer[0]) > self.imu_time_window_s:
-            self.imu_time_buffer.pop(0)
-            self.imu_x_buffer.pop(0)
-            self.imu_y_buffer.pop(0)
-            self.imu_z_buffer.pop(0)
-        
-        self.last_imu = time
+        if time % 40 > 15:
+            self.imu_time_buffer.append(time)
+            self.imu_x_buffer.append(np.sin(time*10))
+            self.imu_y_buffer.append(np.cos(time*10))
+            self.imu_z_buffer.append(-9.8)
+            while (self.imu_time_buffer[-1] - self.imu_time_buffer[0]) > self.imu_time_window_s:
+                self.imu_time_buffer.pop(0)
+                self.imu_x_buffer.pop(0)
+                self.imu_y_buffer.pop(0)
+                self.imu_z_buffer.pop(0)
+            
+            self.last_imu = time
 
     def imu_callback(self, msg):
         time = self.node.get_clock().now().nanoseconds / 1e9 - self.t0

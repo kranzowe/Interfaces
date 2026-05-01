@@ -8,6 +8,8 @@ from launch.substitutions import LaunchConfiguration
 import os
 
 def generate_launch_description():
+    lidar_serial_port = LaunchConfiguration('serial_port')
+
     rplidar_launch = os.path.join(
         get_package_share_directory('rplidar_ros'),
         'launch',
@@ -15,6 +17,9 @@ def generate_launch_description():
     )
     rplidar_launch_action = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(rplidar_launch),
+        launch_arguments={
+            "serial_port": lidar_serial_port,
+        }.items()
     )
 
     return LaunchDescription([
@@ -29,6 +34,11 @@ def generate_launch_description():
             executable="rover_node",
             name="rover_node",
             parameters=[{}],
+        ),
+        DeclareLaunchArgument(
+            'serial_port',
+            default_value='/dev/ttyUSB0',
+            description='USB port for rplidar'
         ),
         rplidar_launch_action,
     ])
