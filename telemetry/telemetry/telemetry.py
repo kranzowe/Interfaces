@@ -38,12 +38,12 @@ class TelemetryNode(Node):
         self.refresh_rate = self.get_parameter("refresh_rate").value
         self.gc_rate = self.get_parameter("gc_rate").value
         self.debug = self.get_parameter("debug").value
-        self.create_timer(0.5, self.param_callback)
+        //self.create_timer(0.5, self.param_callback)
 
-        self.gyro_handler = GyroHandler(self, self.debug)
-        self.imu_handler = ImuHandler(self, self.debug)
-        self.scan_handler = ScanHandler(self, self.debug)
-        self.map_handler = MapHandler(self, self.debug)
+        # self.gyro_handler = GyroHandler(self, self.debug)
+        # # self.imu_handler = ImuHandler(self, self.debug)
+        # # self.scan_handler = ScanHandler(self, self.debug)
+        # self.map_handler = MapHandler(self, self.debug)
 
         self.create_subscription(PoseWithCovarianceStamped, "/amcl_pose", self.alex_cb, 10)
 
