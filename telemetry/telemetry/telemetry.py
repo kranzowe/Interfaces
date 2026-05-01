@@ -38,7 +38,7 @@ class TelemetryNode(Node):
         self.refresh_rate = self.get_parameter("refresh_rate").value
         self.gc_rate = self.get_parameter("gc_rate").value
         self.debug = self.get_parameter("debug").value
-        //self.create_timer(0.5, self.param_callback)
+        #self.create_timer(0.5, self.param_callback)
 
         # self.gyro_handler = GyroHandler(self, self.debug)
         # # self.imu_handler = ImuHandler(self, self.debug)
