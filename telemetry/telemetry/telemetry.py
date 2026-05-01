@@ -13,6 +13,7 @@ import numpy as np
 import os
 import json
 from rclpy.qos import qos_profile_sensor_data
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from ament_index_python import get_package_share_directory
 
 from telemetry.imu_handler import ImuHandler
@@ -43,6 +44,11 @@ class TelemetryNode(Node):
         self.imu_handler = ImuHandler(self, self.debug)
         self.scan_handler = ScanHandler(self, self.debug)
         self.map_handler = MapHandler(self, self.debug)
+
+        self.create_subscription(PoseWithCovarianceStamped, "/amcl_pose", self.alex_cb, 10)
+
+    def alex_cb(self, msg):
+        self.get_logger().info("hehe")
 
     def update_vis(self):
         imu_fig = self.imu_handler.update_imu_plot()
