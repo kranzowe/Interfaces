@@ -7,7 +7,7 @@ import threading
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped
-from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Pose2D
 from std_msgs.msg import Float32
 from PIL import Image
 import numpy as np
@@ -22,12 +22,15 @@ class MapHandler:
 
         self.pose_sub = self.node.create_subscription(
             PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, qos_profile_sensor_data)
+        self.target_sub = self.node.create_subscription(
+            Pose2D, '/pursuit_target', self.target_callback, qos_profile_sensor_data)
         
         self.map_fig = Figure(layout="constrained")
         plt.style.use('dark_background')
         self.ax_map = self.map_fig.subplots(1,1)
         self.ax_map.set_axis_off()
         self.scatter_pose = None
+        self.plot_target = None
 
         self.node.declare_parameter("map.yaml", 'data/oh_my.yaml')
         map_config_path = os.path.join(get_package_share_directory('telemetry'), self.node.get_parameter("map.yaml").value)
@@ -51,6 +54,7 @@ class MapHandler:
         self.pose_x = None
         self.pose_y = None
         self.last_pose = None
+        self.last_target = None
 
         self.node.declare_parameter("map.window_size", 10.0)
         self.window_size = self.node.get_parameter("map.window_size").value / self.map_config["resolution"]
@@ -72,6 +76,12 @@ class MapHandler:
         self.pose_x = msg.pose.pose.position.x
         self.pose_y = msg.pose.pose.position.y
         self.last_pose = time
+    
+    def target_callback(self, msg):
+        time = self.node.get_clock().now().nanoseconds / 1e9 - self.t0
+        self.target_x = msg.x
+        self.target_y = msg.y
+        self.last_target = time
 
     def world_pose_to_img_pose(self, x, y):
         if x is None or y is None:
@@ -88,7 +98,7 @@ class MapHandler:
             self.ax_map.set_xlim([0,self.image_array.shape[1]])
             self.ax_map.set_ylim([0,self.image_array.shape[0]])
         elif self.scatter_pose is None:
-            self.scatter_pose = self.ax_map.scatter([map_x], [map_y], c='b', s=50, zorder=2)
+            self.scatter_pose = self.ax_map.scatter([map_x], [map_y], c='b', s=50, zorder=3)
             self.ax_map.set_xlim([map_x-self.window_size,map_x+self.window_size])
             self.ax_map.set_ylim([map_y-self.window_size,map_y+self.window_size])
         elif now - self.last_pose < self.node.gc_rate:
@@ -99,6 +109,17 @@ class MapHandler:
             self.scatter_pose.set_offsets(np.empty((0, 2)))
             self.ax_map.set_xlim([0,self.image_array.shape[1]])
             self.ax_map.set_ylim([0,self.image_array.shape[0]])
+
+        map_pursue_x, map_pursue_y = self.world_pose_to_img_pose(self.target_x, self.target_y)
+        if map_pursue_x is None:
+            pass
+        elif self.plot_target is None:
+            self.plot_target = self.ax_map.plot([map_x, map_pursue_x], [map_y, map_pursue_y], c='g', zorder=2)
+        elif now - self.last_target < self.node.gc_rate:
+            self.plot_target.set_data([map_x, map_pursue_x], [map_y, map_pursue_y])
+        else:
+            self.plot_target.set_data([], [])
+
         return self.map_fig
 
     def param_cb(self):
