@@ -53,6 +53,8 @@ class MapHandler:
         self.t0 = self.node.get_clock().now().nanoseconds / 1e9
         self.pose_x = None
         self.pose_y = None
+        self.target_x = None
+        self.target_y = None
         self.last_pose = None
         self.last_target = None
 
