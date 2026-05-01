@@ -109,7 +109,7 @@ class LidarBugNode(Node):
         self.loaded_waypoints = SimpleNamespace()
 
 
-        self.declare_parameter("waypoints_file", "Course11_small_path.csv")
+        self.declare_parameter("waypoints_file", "test1.csv")
 
         #self.butter_filter = signal.butter(2, self.filter_strength, btype='low', analog=False, output='sos')
         
