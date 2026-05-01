@@ -209,7 +209,7 @@ class LidarBugNode(Node):
         #calaculat the delta angle
         d_angle = angle_of_travel - self.orientation
 
-        angular_pwm = self.neutral_steer + d_angle * self.steer_p
+        angular_pwm = self.neutral_steer + d_angle * self.steer_p + self.filtered_angular_rate * self.steer_d
 
         msg = Twist()
 
